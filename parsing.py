@@ -24,10 +24,10 @@ class Connection:
                 "Zones cannot be the same for a connection\n"
             )
 
-        if not isinstance(int, max_link_capacity) or max_link_capacity < 1:
+        if not isinstance(max_link_capacity, int) or max_link_capacity < 1:
 
             raise ValueError(
-                f"Invalid max link capacity {max_link_capacity}\n"
+                f"Invalid max link capacity '{max_link_capacity}'\n"
                 "Max link capacity for a connection "
                 "must be a positive integer"
             )
@@ -45,7 +45,7 @@ class Zone(BaseModel):
     zone_type: str = Field(default="normal")
     color: str | None = Field(default=None)
     max_drones: int = Field(default=1, gt=0)
-    connections: list[Connection]
+    connections: list = []
 
     @model_validator(mode="after")
     def validate_name(self) -> self:
@@ -91,17 +91,15 @@ class Zone(BaseModel):
 
     def add_connection(self, new_connection: "Zone", max_cap: int) -> None:
 
-        if self.connections:
+        for connection in self.connections:
 
-            for connection in self.connections:
+            if connection.zone2.name == new_connection.name:
 
-                if connection.zone2.name == new_connection.name:
-
-                    raise ValueError(
-                        f"Connection between '{self.name}' "
-                        f"and '{new_connection.name}'"
-                        "already exists!"
-                    )
+                raise ValueError(
+                    f"Connection between '{self.name}' "
+                    f"and '{new_connection.name}' "
+                    "already exists!"
+                )
 
         self.connections.append(Connection(
             self,
@@ -125,7 +123,7 @@ class Map:
         if self.nb_drones < 1:
 
             raise ValueError(
-                f"Invalid value {nb_drones} for number of drones\n"
+                f"Invalid value '{nb_drones}' for number of drones\n"
                 "Must be a positive integer"
             )
 
@@ -155,7 +153,7 @@ class Map:
 
             raise ValueError(
                 "No hubs have been defined, "
-                f"impossible to create connection {new_connection}"
+                f"impossible to create connection '{new_connection}'"
             )
 
         connection_params: list[str] = new_connection.split(" ")
@@ -172,7 +170,7 @@ class Map:
         if len(con_zones) != 2:
 
             raise ValueError(
-                f"Invalid connection format {connection_params[0]}\n"
+                f"Invalid connection format '{connection_params[0]}'\n"
                 "Format must be '<zone1>-<zone2> [metadata](optional)'"
             )
 
@@ -182,7 +180,7 @@ class Map:
         if not fst_zone or not scd_zone:
 
             raise ValueError(
-                f"Invalid hub(s) given for connection {connection_params[0]}"
+                f"Invalid hub(s) given for connection '{connection_params[0]}'"
             )
 
         fst_zone.add_connection(scd_zone, con_metadata)
@@ -209,14 +207,14 @@ class Map:
         if len(hub_params) < 3:
 
             raise ValueError(
-                f"Invalid zone definition {new_hub} for hub\n"
+                f"Invalid zone definition '{new_hub}' for hub\n"
                 "Zone definition must contain at least a name and coordinates"
             )
 
         if len(hub_params) > 6:
 
             raise ValueError(
-                f"Invalid zone definition {new_hub} for hub\n"
+                f"Invalid zone definition '{new_hub}' for hub\n"
                 "Zone definition must not contain "
                 "more than a name, coordinates, "
                 "and optional metadata 'zone', 'color' and 'max_drones'"
@@ -231,23 +229,23 @@ class Map:
             if hub.name == hub_params[0]:
 
                 raise ValueError(
-                    f"Hub {hub.name} already exists\n"
+                    f"Hub '{hub.name}' already exists\n"
                     "You must choose unique names for each zone"
                 )
 
             if not hub_params[1].isdigit() or not hub_params[2].isdigit():
 
                 raise ValueError(
-                    f"Invalid coordinates ({hub_params[1]}, {hub_params[2]}) "
-                    f"for hub {hub_params[0]}\n"
+                    f"Invalid coordinates '({hub_params[1]}, {hub_params[2]})' "
+                    f"for hub '{hub_params[0]}'\n"
                     "Coordinates must be positive integers"
                 )
 
             if (int(hub_params[1]), int(hub_params[2])) == (hub.x, hub.y):
 
                 raise ValueError(
-                    f"Coordinates for hub {hub_params[0]} "
-                    f"are the same as hub {hub.name}\n"
+                    f"Coordinates for hub '{hub_params[0]}' "
+                    f"are the same as hub '{hub.name}'\n"
                     "Each zone must have unique coordinates"
                 )
 
@@ -285,12 +283,39 @@ class MapParser:
 
                         self.parse_line(line.strip())
 
+            if not hasattr(self.map, "start_hub"):
+
+                raise ValueError(
+                    "Missing start hub!"
+                )
+
+            if not hasattr(self.map, "end_hub"):
+
+                raise ValueError(
+                    "Missing end hub!"
+                )
+
+            if not hasattr(self.map, "nb_drones"):
+
+                raise ValueError(
+                    "Missing number of drones!"
+                )
+
         except Exception as err:
 
             print(
-                f"Caught Parsing Error {err.__class__.__name__} "
-                f"for line '{line.strip()}': {err}\n"
+                "Caught Parsing Error "
+                f"for line '{line.strip()}':"
             )
+
+            if err.__class__.__name__ == "ValidationError":
+
+                for error in err.errors():
+                    print(error["msg"])
+
+            else:
+
+                print(err)
 
         else:
 
@@ -342,6 +367,10 @@ class MapParser:
         color: str | None = None
         max_drones: int = 1
 
+        zone_defined: bool = False
+        color_defined: bool = False
+        max_drones_defined: bool = False
+
         if len(params) > 3:
 
             if not (params[3].startswith("[") and params[-1].endswith("]")):
@@ -365,15 +394,39 @@ class MapParser:
 
                 if match.group(1) == "zone":
 
+                    if zone_defined:
+
+                        raise ValueError(
+                            f"Invalid metadata '{params[p]}'\n"
+                            "Zone type is already defined"
+                        )
+
                     zone = match.group(2)
+                    zone_defined = True
 
                 elif match.group(1) == "color":
 
+                    if color_defined:
+
+                        raise ValueError(
+                            f"Invalid metadata '{params[p]}'\n"
+                            "Color for the zone is already defined"
+                        )
+
                     color = match.group(2)
+                    color_defined = True
 
                 elif match.group(1) == "max_drones":
 
+                    if max_drones_defined:
+
+                        raise ValueError(
+                            f"Invalid metadata '{params[p]}'\n"
+                            "Maximum drones for the zone is already defined"
+                        )
+
                     max_drones = int(match.group(2))
+                    max_drones_defined = True
 
                 else:
 
@@ -414,7 +467,7 @@ class MapParser:
             con_params[1] = con_params[1].replace("]", "")
 
             if not (match := re.match(
-                "[max_link_capacity=]([0-9]+)",
+                "max_link_capacity=([0-9]+)",
                 con_params[1]
             )):
 
