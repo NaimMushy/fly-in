@@ -13,23 +13,46 @@ ce que j'ai besoin de savoir pour mes drones:
 
     - leur position
     - s'ils attendent ou pas
-    - leur hub actuel? 
+    - leur hub actuel?
     - leur prochaine destination?
 """
+
+
+class Path:
+
+    def __init__(self) -> None:
+
+        self.path: list[Zone] = []
+        self.cost: int = 0
+
 
 class Pathfinder:
 
     def __init__(self, drone_map: Map) -> None:
 
         self.map: Map = drone_map
-        self.paths: list[list[Zone | Connection]] = []
-    
-    def calculate_paths(self) -> None:
+        self.paths: list[Path] = self.calculate_paths(
+            self.map.start_hub,
+            Path(),
+            self.map.end_hub
+        )
 
-        paths_explored: int = 0
-        current_hub: Zone = self.map.end_hub
-        visited_hubs: list[Zone] = []
+    def calculate_paths(self, current_hub: Zone, current_path: Path, dest: Zone) -> list[Path]:
 
-        while pas tous trouvés:
+        if current_hub.zone_type == "blocked":
 
-            visited_hubs.append(current_hub)
+            return self.paths
+
+        current_path.cost += 1
+
+        if current_hub.zone_type == "restricted":
+
+            current_path.cost += 1
+
+        if current_hub == dest:
+
+            return self.paths + current_path
+
+        for branch in current_path.connections:
+
+            return self.calculate_paths(branch, current_path, dest)
