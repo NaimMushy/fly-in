@@ -1,0 +1,25 @@
+# Three parallel lanes with different costs and capacities
+nb_drones: 6
+start_hub: launch 0 0 [color=green max_drones=6]
+end_hub: land 12 0 [color=yellow max_drones=6]
+hub: laneA1 3 3 [zone=priority color=blue]
+hub: laneA2 6 3 [zone=priority color=blue max_drones=2]
+hub: laneA3 9 3 [zone=priority color=blue]
+hub: laneB1 3 0 [zone=normal]
+hub: laneB2 6 0 [zone=normal max_drones=3]
+hub: laneB3 9 0 [zone=normal]
+hub: laneC1 3 -3 [zone=restricted color=orange]
+hub: laneC2 6 -3 [zone=restricted color=orange max_drones=2]
+hub: laneC3 9 -3 [zone=restricted color=orange]
+connection: launch-laneA1 [max_link_capacity=2]
+connection: launch-laneB1 [max_link_capacity=3]
+connection: launch-laneC1 [max_link_capacity=2]
+connection: laneA1-laneA2
+connection: laneA2-laneA3
+connection: laneA3-land [max_link_capacity=2]
+connection: laneB1-laneB2
+connection: laneB2-laneB3
+connection: laneB3-land [max_link_capacity=3]
+connection: laneC1-laneC2
+connection: laneC2-laneC3
+connection: laneC3-land [max_link_capacity=2]

@@ -1,0 +1,13 @@
+# All paths go through a central hub
+nb_drones: 4
+start_hub: center 5 5 [color=green max_drones=4]
+end_hub: target 5 -5 [color=yellow]
+hub: spokeN 5 10 [zone=normal color=blue]
+hub: spokeE 10 5 [zone=normal color=blue]
+hub: spokeW 0 5 [zone=normal color=blue]
+hub: spokeS 5 0 [zone=priority color=green]
+connection: center-spokeN
+connection: center-spokeE
+connection: center-spokeW
+connection: center-spokeS
+connection: spokeS-target

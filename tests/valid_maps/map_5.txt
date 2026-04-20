@@ -1,0 +1,13 @@
+# Stress test: many drones through a single chokepoint
+nb_drones: 10
+start_hub: base 0 0 [color=green max_drones=10]
+end_hub: goal 10 0 [color=red max_drones=10]
+hub: chokepoint 5 0 [zone=normal max_drones=2]
+hub: bypassN 5 4 [zone=restricted color=orange max_drones=3]
+hub: bypassS 5 -4 [zone=restricted color=orange max_drones=3]
+connection: base-chokepoint [max_link_capacity=2]
+connection: base-bypassN
+connection: base-bypassS
+connection: chokepoint-goal [max_link_capacity=2]
+connection: bypassN-goal
+connection: bypassS-goal

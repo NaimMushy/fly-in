@@ -43,8 +43,8 @@ class Connection:
 class Zone(BaseModel):
 
     name: str
-    x: int = Field(ge=0)
-    y: int = Field(ge=0)
+    x: int
+    y: int
     zone_type: str = Field(default="normal")
     color: str | None = Field(default=None)
     max_drones: int = Field(default=1, gt=0)
@@ -255,15 +255,6 @@ class Map:
                     "You must choose unique names for each zone"
                 )
 
-            if not hub_params[1].isdigit() or not hub_params[2].isdigit():
-
-                raise ValueError(
-                    "Invalid coordinates "
-                    f"'({hub_params[1]}, {hub_params[2]})' "
-                    f"for hub '{hub_params[0]}'\n"
-                    "Coordinates must be positive integers"
-                )
-
             if (int(hub_params[1]), int(hub_params[2])) == (hub.x, hub.y):
 
                 raise ValueError(
@@ -349,8 +340,7 @@ class MapParser:
         except Exception as err:
 
             print(
-                "Caught Parsing Error "
-                f"for line '{line.strip()}':"
+                "Caught Parsing Error :"
             )
 
             if isinstance(err, ValidationError):
@@ -392,6 +382,12 @@ class MapParser:
     @staticmethod
     def parse_hub_metadata(params: list[str]) -> tuple[str, str | None, int]:
 
+        if len(params) < 3:
+            raise ValueError(
+                "Missing definition parameters for the hub\n"
+                "Parameters required are the hub's name and coordinates"
+            )
+
         zone: str = "normal"
         color: str | None = None
         max_drones: int = 1
@@ -400,76 +396,72 @@ class MapParser:
         color_defined: bool = False
         max_drones_defined: bool = False
 
-        if len(params) > 3:
-
-            if not (params[3].startswith("[") and params[-1].endswith("]")):
-
-                raise ValueError(
-                    f"Invalid metadata format in zone definition '{params}'\n"
-                    "Metadata must be incased in brackets '[]'"
-                )
-
-            params[3] = params[3].replace("[", "")
-            params[-1] = params[-1].replace("]", "")
-
-            for p in range(3, len(params)):
-
-                if not (match := re.match("([a-z_]+)=(.+)", params[p], re.I)):
-
-                    raise ValueError(
-                        f"Invalid format for metadata '{params[p]}'\n"
-                        "Metadata must be of '<parameter>=<value>' format"
-                    )
-
-                if match.group(1) == "zone":
-
-                    if zone_defined:
-
-                        raise ValueError(
-                            f"Invalid metadata '{params[p]}'\n"
-                            "Zone type is already defined"
-                        )
-
-                    zone = match.group(2)
-                    zone_defined = True
-
-                elif match.group(1) == "color":
-
-                    if color_defined:
-
-                        raise ValueError(
-                            f"Invalid metadata '{params[p]}'\n"
-                            "Color for the zone is already defined"
-                        )
-
-                    color = match.group(2)
-                    color_defined = True
-
-                elif match.group(1) == "max_drones":
-
-                    if max_drones_defined:
-
-                        raise ValueError(
-                            f"Invalid metadata '{params[p]}'\n"
-                            "Maximum drones for the zone is already defined"
-                        )
-
-                    max_drones = int(match.group(2))
-                    max_drones_defined = True
-
-                else:
-
-                    raise ValueError(
-                        f"Invalid parameter '{match.group(1)}' for metadata\n"
-                        "Valid parameters are 'zone', 'color' and 'max_drones'"
-                    )
-
+        if len(params) == 3:
             return (zone, color, max_drones)
 
-        raise ValueError(
-            "Missing definition parameters for the hub\n"
-            "Parameters required are the hub's name and coordinates"
-        )
+        if not (params[3].startswith("[") and params[-1].endswith("]")):
+
+            raise ValueError(
+                f"Invalid metadata format in zone definition '{params}'\n"
+                "Metadata must be incased in brackets '[]'"
+            )
+
+        params[3] = params[3].replace("[", "")
+        params[-1] = params[-1].replace("]", "")
+
+        for p in range(3, len(params)):
+
+            if not (match := re.match("([a-z_]+)=(.+)", params[p], re.I)):
+
+                raise ValueError(
+                    f"Invalid format for metadata '{params[p]}'\n"
+                    "Metadata must be of '<parameter>=<value>' format"
+                )
+
+            if match.group(1) == "zone":
+
+                if zone_defined:
+
+                    raise ValueError(
+                        f"Invalid metadata '{params[p]}'\n"
+                        "Zone type is already defined"
+                    )
+
+                zone = match.group(2)
+                zone_defined = True
+
+            elif match.group(1) == "color":
+
+                if color_defined:
+
+                    raise ValueError(
+                        f"Invalid metadata '{params[p]}'\n"
+                        "Color for the zone is already defined"
+                    )
+
+                color = match.group(2)
+                color_defined = True
+
+            elif match.group(1) == "max_drones":
+
+                if max_drones_defined:
+
+                    raise ValueError(
+                        f"Invalid metadata '{params[p]}'\n"
+                        "Maximum drones for the zone is already defined"
+                    )
+
+                max_drones = int(match.group(2))
+                max_drones_defined = True
+
+            else:
+
+                raise ValueError(
+                    f"Invalid parameter '{match.group(1)}' for metadata\n"
+                    "Valid parameters are 'zone', 'color' and 'max_drones'"
+                )
+
+        return (zone, color, max_drones)
 
     @staticmethod
     def parse_con_metadata(con_params: list[str]) -> int:

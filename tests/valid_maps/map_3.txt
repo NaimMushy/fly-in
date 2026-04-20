@@ -1,0 +1,12 @@
+# Blocked zone in the middle, drones must go around
+nb_drones: 2
+start_hub: start 0 0 [color=green]
+end_hub: finish 8 0 [color=yellow]
+hub: wall 4 0 [zone=blocked color=gray]
+hub: detourN 4 3 [zone=normal color=blue]
+hub: detourS 4 -3 [zone=restricted color=red]
+connection: start-wall
+connection: start-detourN
+connection: start-detourS
+connection: detourN-finish
+connection: detourS-finish

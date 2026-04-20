@@ -1,0 +1,23 @@
+# Long corridor, alternating restricted and priority zones
+nb_drones: 2
+start_hub: alpha 0 0 [color=green]
+end_hub: omega 20 0 [color=red]
+hub: s1 2 0 [zone=priority color=blue]
+hub: s2 4 0 [zone=restricted color=orange]
+hub: s3 6 0 [zone=priority color=blue]
+hub: s4 8 0 [zone=restricted color=orange]
+hub: s5 10 0 [zone=priority color=blue]
+hub: s6 12 0 [zone=restricted color=orange]
+hub: s7 14 0 [zone=priority color=blue]
+hub: s8 16 0 [zone=restricted color=orange]
+hub: s9 18 0 [zone=priority color=blue]
+connection: alpha-s1
+connection: s1-s2
+connection: s2-s3
+connection: s3-s4
+connection: s4-s5
+connection: s5-s6
+connection: s6-s7
+connection: s7-s8
+connection: s8-s9
+connection: s9-omega

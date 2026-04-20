@@ -1,0 +1,13 @@
+# Multiple routes, some restricted/priority
+nb_drones: 3
+start_hub: entrance 0 0 [color=green]
+end_hub: exit 10 0 [color=red]
+hub: fast 5 2 [zone=priority color=blue]
+hub: slow 5 -2 [zone=restricted color=orange]
+hub: normal1 3 0 [zone=normal]
+connection: entrance-fast
+connection: entrance-slow
+connection: entrance-normal1
+connection: fast-exit
+connection: slow-exit
+connection: normal1-exit

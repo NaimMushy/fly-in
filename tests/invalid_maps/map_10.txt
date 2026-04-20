@@ -1,0 +1,7 @@
+nb_drones: 2
+start_hub: A 0 0
+end_hub: B 10 0
+hub: mid 5 0
+this is not valid syntax !!!
+connection: A-mid
+connection: mid-B

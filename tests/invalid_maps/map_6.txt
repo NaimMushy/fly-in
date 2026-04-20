@@ -1,0 +1,6 @@
+nb_drones: 2
+start_hub: A 0 0
+end_hub: B 10 0
+hub: mid 5 0 [zone]
+connection: A-mid
+connection: mid-B
