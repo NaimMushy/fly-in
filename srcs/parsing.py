@@ -1,5 +1,6 @@
 import re
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, ValidationError, model_validator
+from typing import Callable
 from typing_extensions import Self as self
 
 
@@ -35,6 +36,8 @@ class Connection:
         self.zone1: "Zone" = zone1
         self.zone2: "Zone" = zone2
         self.max_link_capacity: int = max_link_capacity
+        self.wish_to_occupy: list = []
+        self.occupied: list = []
 
 
 class Zone(BaseModel):
@@ -45,7 +48,9 @@ class Zone(BaseModel):
     zone_type: str = Field(default="normal")
     color: str | None = Field(default=None)
     max_drones: int = Field(default=1, gt=0)
-    connections: list = []
+    connections: dict = Field(default={})
+    wish_to_occupy: list = Field(default=[])
+    occupied: list = Field(default=[])
 
     @model_validator(mode="after")
     def validate_name(self) -> self:
@@ -91,21 +96,19 @@ class Zone(BaseModel):
 
     def add_connection(self, new_connection: "Zone", max_cap: int) -> None:
 
-        for connection in self.connections:
+        if new_connection.name in self.connections.keys():
 
-            if connection.zone2.name == new_connection.name:
+            raise ValueError(
+                f"Connection between '{self.name}' "
+                f"and '{new_connection.name}' "
+                "already exists!"
+            )
 
-                raise ValueError(
-                    f"Connection between '{self.name}' "
-                    f"and '{new_connection.name}' "
-                    "already exists!"
-                )
-
-        self.connections.append(Connection(
+        self.connections[new_connection.name] = Connection(
             self,
             new_connection,
             max_cap
-        ))
+        )
 
 
 class Map:
@@ -137,6 +140,20 @@ class Map:
 
         self.start_hub = self.add_hub(start_hub)
 
+        if "max_drones" not in start_hub:
+            self.start_hub.max_drones = self.nb_drones
+
+        if self.start_hub.max_drones < self.nb_drones:
+            raise ValueError(
+                "The drone capacity of the starting hub "
+                "should not be inferior to the number of drones"
+            )
+
+        if self.start_hub.zone_type == "blocked":
+            raise ValueError(
+                "The starting hub should not be a blocked zone"
+            )
+
     def validate_end_hub(self, end_hub: str) -> None:
 
         if hasattr(self, "end_hub"):
@@ -146,6 +163,11 @@ class Map:
             )
 
         self.end_hub = self.add_hub(end_hub)
+
+        if self.end_hub.zone_type == "blocked":
+            raise ValueError(
+                "The end hub should not be a blocked zone"
+            )
 
     def validate_connection(self, new_connection: str) -> None:
 
@@ -186,7 +208,7 @@ class Map:
         fst_zone.add_connection(scd_zone, con_metadata)
         scd_zone.add_connection(fst_zone, con_metadata)
 
-    def find_hub(self, hub_name: str) -> Zone:
+    def find_hub(self, hub_name: str) -> Zone | None:
 
         if hasattr(self, "hubs"):
 
@@ -236,7 +258,8 @@ class Map:
             if not hub_params[1].isdigit() or not hub_params[2].isdigit():
 
                 raise ValueError(
-                    f"Invalid coordinates '({hub_params[1]}, {hub_params[2]})' "
+                    "Invalid coordinates "
+                    f"'({hub_params[1]}, {hub_params[2]})' "
                     f"for hub '{hub_params[0]}'\n"
                     "Coordinates must be positive integers"
                 )
@@ -249,7 +272,9 @@ class Map:
                     "Each zone must have unique coordinates"
                 )
 
-        metadata: tuple[str, str | None, int] = MapParser.parse_hub_metadata(hub_params)
+        metadata: tuple[
+            str, str | None, int
+        ] = MapParser.parse_hub_metadata(hub_params)
 
         hub_created: Zone = Zone(
             name=hub_params[0],
@@ -257,8 +282,7 @@ class Map:
             y=int(hub_params[2]),
             zone_type=metadata[0],
             color=metadata[1],
-            max_drones=metadata[2],
-            connections=[]
+            max_drones=metadata[2]
         )
         print(f"successfully created hub {hub_created.name}")
 
@@ -269,19 +293,40 @@ class Map:
 
 class MapParser:
 
-    def parse_map(self, filename: str) -> Map:
+    def parse_map(self, filename: str) -> Map | None:
 
         self.map: Map = Map()
+        self.lines: dict[str, tuple[list[str], Callable]] = {
+            "nb_drones": ([], self.map.validate_nb_drones),
+            "start_hub": ([], self.map.validate_start_hub),
+            "end_hub": ([], self.map.validate_end_hub),
+            "hub": ([], self.map.add_hub),
+            "connection": ([], self.map.validate_connection)
+        }
 
         try:
 
             with open(filename) as map_file:
 
+                fst: bool = True
+
                 for line in map_file:
 
                     if not line.startswith("#") and line.strip():
 
+                        if fst:
+                            if "nb_drones" not in line:
+                                raise ValueError(
+                                    "The first line should be "
+                                    "the number of drones"
+                                )
+                            fst = False
                         self.parse_line(line.strip())
+
+                for parameter in self.lines.values():
+
+                    for definition in parameter[0]:
+                        parameter[1](definition)
 
             if not hasattr(self.map, "start_hub"):
 
@@ -308,7 +353,7 @@ class MapParser:
                 f"for line '{line.strip()}':"
             )
 
-            if err.__class__.__name__ == "ValidationError":
+            if isinstance(err, ValidationError):
 
                 for error in err.errors():
                     print(error["msg"])
@@ -316,6 +361,8 @@ class MapParser:
             else:
 
                 print(err)
+
+            return None
 
         else:
 
@@ -332,33 +379,15 @@ class MapParser:
 
         parameter: str = match.group(1)
 
-        if parameter == "nb_drones":
-
-            self.map.validate_nb_drones(match.group(2))
-
-        elif parameter == "start_hub":
-
-            self.map.validate_start_hub(match.group(2))
-
-        elif parameter == "end_hub":
-
-            self.map.validate_end_hub(match.group(2))
-
-        elif parameter == "hub":
-
-            self.map.add_hub(match.group(2))
-
-        elif parameter == "connection":
-
-            self.map.validate_connection(match.group(2))
-
-        else:
+        if parameter not in self.lines.keys():
 
             raise ValueError(
                 f"Invalid parameter type '{parameter}'\n"
                 "Parameter must be one of 'nb_drones', 'start_hub', "
                 "'end_hub', 'hub', or 'connection'"
             )
+
+        self.lines[parameter][0].append(match.group(2))
 
     @staticmethod
     def parse_hub_metadata(params: list[str]) -> tuple[str, str | None, int]:
@@ -437,6 +466,11 @@ class MapParser:
 
             return (zone, color, max_drones)
 
+        raise ValueError(
+            "Missing definition parameters for the hub\n"
+            "Parameters required are the hub's name and coordinates"
+        )
+
     @staticmethod
     def parse_con_metadata(con_params: list[str]) -> int:
 
@@ -490,7 +524,9 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
 
         map_parser: MapParser = MapParser()
-        drone_map: Map = map_parser.parse_map(sys.argv[1])
+        drone_map: Map | None = map_parser.parse_map(sys.argv[1])
+        if not drone_map:
+            print("\n==== An error has been caught while parsing the map ====")
 
     else:
 
