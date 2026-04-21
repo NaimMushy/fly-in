@@ -1,82 +1,22 @@
-from .parsing import Zone, Connection, Map
-
-
-class Path:
-
-    def __init__(self) -> None:
-
-        self.path: list[Zone] = []
-        self.cost: int = 0
-        self.priority: bool = False
-
-
-class Pathfinder:
-
-    def __init__(self, drone_map: Map) -> None:
-
-        self.map: Map = drone_map
-        if not self.calculate_paths(
-            self.map.start_hub,
-            Path(),
-            self.map.end_hub,
-            []
-        ):
-            raise ValueError(
-                "No paths found! Map considered invalid"
-            )
-
-    def calculate_paths(
-        self,
-        current_hub: Zone,
-        current_path: Path,
-        dest: Zone,
-        possible_paths: list[Path]
-    ) -> list[Path]:
-
-        if current_hub.zone_type == "blocked":
-
-            return possible_paths
-
-        current_path.cost += 1
-
-        if current_hub.zone_type == "restricted":
-            current_path.cost += 1
-
-        current_path.path.append(current_hub)
-
-        if current_hub == dest:
-
-            return possible_paths + [current_path]
-
-        for branch in current_hub.connections:
-
-            return self.calculate_paths(
-                branch,
-                current_path,
-                dest,
-                possible_paths
-            )
-
-        return possible_paths
+from .zones import Zone, Connection
+from .path import Path, Pathfinder
+from .parsing import Map
+import time
 
 
 class Drone:
 
     def __init__(
         self, drone_id: int,
-        start_pos: Zone,
-        path_to_follow: Path
+        start_pos: Zone
     ) -> None:
 
         self.id: int = drone_id
         self.current_zone: Zone | Connection = start_pos
-        self.path_to_follow: Path = path_to_follow
         self.waiting: bool = False
 
-    def turn_action(self, pathfinder: Pathfinder) -> None:
+    def turn_action(self) -> None:
 
-        # this should be put in the main loop
-        self.reevaluate_drone_path(pathfinder)
         if self not in self.next_zone.wish_to_occupy:
             self.next_zone.wish_to_occupy.append(self)
         if (
@@ -175,3 +115,36 @@ class Drone:
                 self.path_to_follow = path
 
         self.next_zone: Zone = self.path_to_follow.path[0]
+
+
+class DroneMonitor:
+
+    def __init__(self, drone_map: Map, pathfinder: Pathfinder) -> None:
+
+        self.drone_map: Map = drone_map
+        self.pathfinder: Pathfinder = pathfinder
+        self.drones: list[Drone] = []
+
+        for drone_id in range(1, self.drone_map.nb_drones + 1):
+
+            self.drones.append(Drone(
+                drone_id,
+                self.drone_map.start_hub
+            ))
+
+    def update_drones(self) -> None:
+
+        for drone in self.drones:
+
+            drone.reevaluate_drone_path(self.pathfinder)
+            drone.turn_action()
+            if not drone.waiting:
+                print(f"D{drone.id}-{drone.current_zone.name}", end="")
+            if drone != self.drones[0]:
+                print(" ", end="")
+            if drone.current_zone == self.drone_map.end_hub:
+                drone.current_zone.occupied.remove(drone)
+                self.drones.remove(drone)
+
+        print()
+        time.sleep(2)
