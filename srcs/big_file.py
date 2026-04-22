@@ -46,6 +46,15 @@ class Connection:
         self.wish_to_occupy: list = []
         self.occupied: list = []
 
+    def free_spaces(self) -> int:
+
+        if not self.occupied:
+            return 0
+        return len([
+            drone for drone in self.occupied
+            if drone.is_next_step_accessible(drone.path_to_follow)
+        ])
+
     def calculate_wait_cost(self, drone: "Drone") -> int:
 
         cost: int = 1
@@ -53,7 +62,9 @@ class Connection:
             if drone_wish == drone:
                 break
             cost += 1
-        return abs(cost - self.max_link_capacity - len(self.occupied))
+        return abs(
+            cost - (self.max_link_capacity - len(self.occupied))
+        ) - self.free_spaces()
 
     def is_accessible(self, drone: "Drone") -> bool:
 
@@ -124,7 +135,10 @@ class Zone(BaseModel):
 
         return self
 
-    def add_connection(self, new_connection: Connection, neighbor: "Zone") -> None:
+    def add_connection(
+        self, new_connection: Connection,
+        neighbor: "Zone"
+    ) -> None:
 
         if neighbor.name in self.connections.keys():
 
@@ -149,6 +163,15 @@ class Zone(BaseModel):
 
         print("\n")
 
+    def free_spaces(self) -> int:
+
+        if not self.occupied:
+            return 0
+        return len([
+            drone for drone in self.occupied
+            if drone.is_next_step_accessible(drone.path_to_follow)
+        ])
+
     def calculate_wait_cost(self, drone: "Drone") -> int:
 
         cost: int = 1
@@ -156,7 +179,9 @@ class Zone(BaseModel):
             if drone_wish == drone:
                 break
             cost += 1
-        return abs(cost - self.max_drones - len(self.occupied))
+        return abs(
+            cost - (self.max_drones - len(self.occupied))
+        ) - self.free_spaces()
 
     def is_accessible(self, drone: "Drone") -> bool:
 
@@ -225,6 +250,15 @@ class Map:
             )
 
         self.end_hub = self.add_hub(end_hub)
+
+        if "max_drones" not in end_hub:
+            self.end_hub.max_drones = self.nb_drones
+
+        if self.end_hub.max_drones < self.nb_drones:
+            raise ValueError(
+                "The drone capacity of the ending hub "
+                "should not be inferior to the number of drones"
+            )
 
         if self.end_hub.zone_type == "blocked":
             raise ValueError(
@@ -626,7 +660,10 @@ class Pathfinder:
 
                 if current_hub == branch.zone1:
 
-                    if current_hub.zone_type == "restricted":
+                    if branch.zone2 in current_path:
+                        return
+
+                    if branch.zone2.zone_type == "restricted":
                         cost_to_add += 1
 
                     for path in possible_paths:
@@ -660,7 +697,7 @@ class Drone:
 
         if self not in self.next_zone.wish_to_occupy:
             self.next_zone.wish_to_occupy.append(self)
-            # print(f"drone D{self.id} got into zone {self.next_zone.name} wto, len={len(self.next_zone.wish_to_occupy)}\n")
+
         if (
             not isinstance(self.current_zone, Connection)
             and self not in self.next_zone.connections[
@@ -670,7 +707,6 @@ class Drone:
             self.next_zone.connections[
                 self.current_zone.name
             ].wish_to_occupy.append(self)
-            # print(f"drone D{self.id} got into connection {self.next_zone.connections[self.current_zone.name].name} wto, len={len(self.next_zone.connections[self.current_zone.name].wish_to_occupy)}\n")
 
     def turn_action(self) -> None:
 
@@ -678,19 +714,20 @@ class Drone:
 
             self.waiting = False
 
-            print(f"drone D{self.id} is moving, removing itself from occupying: ", end="")
-            for occupying in self.occupying:
-                print(f"zone {occupying.name} ", end="")
-                occupying.occupied.remove(self)
-                self.occupying.remove(occupying)
-            print()
+            for occup in self.occupying:
+                occup.occupied.remove(self)
+            self.occupying = []
 
             if self.next_zone.zone_type == "restricted":
 
                 if isinstance(self.current_zone, Connection):
+
                     self.current_zone = self.next_zone
                     self.path_to_follow.path.remove(self.current_zone)
+                    self.path_to_follow.cost -= 1
+
                 else:
+
                     self.current_zone = self.next_zone.connections[
                         self.current_zone.name
                     ]
@@ -711,24 +748,31 @@ class Drone:
             self.current_zone.wish_to_occupy.remove(self)
             self.current_zone.occupied.append(self)
             self.occupying.append(self.current_zone)
-            print(f"drone D{self.id} got into zone/connection {self.current_zone.name}")
 
         else:
+
             self.waiting = True
 
     def is_next_step_accessible(self, path: Path) -> bool:
 
-        if isinstance(self.current_zone, Connection):
+        if (
+            isinstance(self.current_zone, Connection)
+            or (
+                hasattr(self, "next_zone")
+                and self.current_zone == self.next_zone
+            )
+        ):
             return True
 
-        print(f"\ndrone D{self.id} is trying to evaluate path:")
-        path.display_path()
-        print(f"\n with current zone: {self.current_zone.name}\n")
-
         next_step: Zone = path.path[0]
+        # print(f"\ndrone D{self.id} is trying to determine if zone {next_step.name} is accessible, current position {self.current_zone.name}\n")
         connection: Connection = next_step.connections[self.current_zone.name]
-        ns_sp_rem: int = next_step.max_drones - len(next_step.occupied)
-        con_sp_rem: int = connection.max_link_capacity - len(connection.occupied)
+        ns_sp_rem: int = next_step.max_drones - len(
+            next_step.occupied
+        )
+        con_sp_rem: int = connection.max_link_capacity - len(
+            connection.occupied
+        )
 
         if con_sp_rem == 0:
             return False
@@ -737,26 +781,37 @@ class Drone:
 
             if next_step.zone_type == "restricted":
 
-                free_spaces: int = len([
-                    drone.is_next_step_accessible(drone.path_to_follow)
-                    for drone in next_step.occupied
-                ])
                 if (
-                    len(next_step.wish_to_occupy) < free_spaces
-                    or self in next_step.wish_to_occupy[:free_spaces]
+                    len(next_step.wish_to_occupy) < next_step.free_spaces()
+                    or self in next_step.wish_to_occupy[
+                        :next_step.free_spaces()
+                    ]
                 ):
                     return True
 
             return False
 
-        # print(f"connection {connection.name} accessible for drone D{self.id}={connection.is_accessible(self)}")
-        # print(f"zone {next_step.name} accessible for drone D{self.id}={next_step.is_accessible(self)}")
-        return (connection.is_accessible(self) and next_step.is_accessible(self))
+        return (
+            connection.is_accessible(self)
+            and next_step.is_accessible(self)
+        )
+
+    def free_connections(self) -> None:
+
+        connections_occupied: list[Connection] = [
+            zone for zone in self.occupying
+            if isinstance(zone, Connection)
+        ]
+        for con in connections_occupied:
+            con.occupied.remove(self)
+            self.occupying.remove(con)
 
     def reevaluate_drone_path(self, pathfinder: Pathfinder) -> None:
 
         if isinstance(self.current_zone, Connection):
             return
+
+        self.free_connections()
 
         possible_paths: list[Path] = pathfinder.calculate_paths(
             self.current_zone,
@@ -773,8 +828,6 @@ class Drone:
 
             if not self.is_next_step_accessible(path):
 
-                # print("adding waiting cost to a path:\n")
-
                 if not path.path[0].connections[
                     self.current_zone.name
                 ].is_accessible(self):
@@ -786,8 +839,6 @@ class Drone:
                 elif not path.path[0].is_accessible(self):
 
                     path.cost += path.path[0].calculate_wait_cost(self)
-
-                # path.display_path()
 
             if path.path[0].zone_type == "priority":
                 path.priority = True
@@ -807,6 +858,14 @@ class Drone:
 
         self.next_zone: Zone = self.path_to_follow.path[0]
         self.update_intent()
+#        if self.id == 6:
+#            print("\n\nall possible paths:\n")
+#            for path in possible_paths:
+#                path.display_path()
+#                print()
+#            print("\npath chosen by D6:")
+#            self.path_to_follow.display_path()
+#            print()
 
 
 class DroneMonitor:
@@ -816,6 +875,7 @@ class DroneMonitor:
         self.drone_map: Map = drone_map
         self.pathfinder: Pathfinder = pathfinder
         self.drones: list[Drone] = []
+        self.turns: int = 0
 
         for drone_id in range(1, self.drone_map.nb_drones + 1):
 
@@ -826,24 +886,24 @@ class DroneMonitor:
             self.drones.append(new_drone)
             self.drone_map.start_hub.occupied.append(new_drone)
 
-        print("\n==== DRONES ====\n\n")
-        for drone in self.drones:
-            print(f"-> drone D{drone.id}")
+#        print("\n==== DRONES ====\n\n")
+#        for drone in self.drones:
+#            print(f"-> drone D{drone.id}")
 
     def update_drones(self) -> None:
 
-        print("\n==== REEVALUATING DRONE PATHS ====\n\n")
+        # print("\n==== REEVALUATING DRONE PATHS ====\n\n")
         for drone in self.drones:
 
             drone.reevaluate_drone_path(self.pathfinder)
 
-        print("\n==== PATHS CHOSEN ====\n\n")
-        for drone in self.drones:
-            print(f"-> drone D{drone.id}:\n")
-            drone.path_to_follow.display_path()
-            print()
+#        print("\n==== PATHS CHOSEN ====\n\n")
+#        for drone in self.drones:
+#            print(f"-> drone D{drone.id}:\n")
+#            drone.path_to_follow.display_path()
+#            print()
 
-        print("\n==== DRONES TURN ACTION ====\n\n")
+        # print("\n==== DRONES TURN ACTION ====\n\n")
         for drone in self.drones:
 
             drone.turn_action()
@@ -853,14 +913,16 @@ class DroneMonitor:
             if not drone.waiting
         ]
 
-        print("\n==== DISPLAYING DRONE MOVEMENTS ====\n\n")
+        # print("\n==== DISPLAYING DRONE MOVEMENTS ====\n\n")
         for drone in moving_drones:
             if drone != moving_drones[0]:
                 print(" ", end="")
             print(f"D{drone.id}-{drone.current_zone.name}", end="")
             if drone.current_zone == self.drone_map.end_hub:
-                drone.current_zone.occupied.remove(drone)
+                for occupying in drone.occupying:
+                    occupying.occupied.remove(drone)
                 self.drones.remove(drone)
 
         print()
-        time.sleep(2)
+        time.sleep(0.1)
+        self.turns += 1

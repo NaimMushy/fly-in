@@ -31,7 +31,10 @@ if __name__ == "__main__":
                 while drone_monitor.drones:
                     drone_monitor.update_drones()
 
-                print("==== All drones have been successfully delivered! ====")
+                print(
+                    "==== All drones have been successfully delivered! "
+                    f"TURNS={drone_monitor.turns} ===="
+                )
 
     else:
 
