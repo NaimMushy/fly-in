@@ -1,41 +1,65 @@
 from pydantic import BaseModel, Field, model_validator
+from typing import Any as any
 from typing_extensions import Self as self
 
 
-class Connection:
+class Connection(BaseModel):
 
-    def __init__(
-        self,
-        zone1: "Zone",
-        zone2: "Zone",
-        max_link_capacity: int
-    ) -> None:
+    name: str
+    zone1: "Zone"
+    zone2: "Zone"
+    max_link_capacity: int = Field(ge=1)
+    wish_to_occupy: list[any] = Field(default=[])
+    occupied: list[any] = Field(default=[])
 
-        if zone1 is None or zone2 is None:
+    @model_validator(mode="after")
+    def validate_zones(self) -> self:
+
+        if self.zone1 is None or self.zone2 is None:
 
             raise ValueError(
                 "A zone for a connection cannot be None\n"
             )
 
-        if zone1 == zone2:
+        if self.zone1 == self.zone2:
 
             raise ValueError(
                 "Zones cannot be the same for a connection\n"
             )
 
-        if not isinstance(max_link_capacity, int) or max_link_capacity < 1:
+        return self
 
-            raise ValueError(
-                f"Invalid max link capacity '{max_link_capacity}'\n"
-                "Max link capacity for a connection "
-                "must be a positive integer"
-            )
+    def free_spaces(self) -> int:
 
-        self.zone1: "Zone" = zone1
-        self.zone2: "Zone" = zone2
-        self.max_link_capacity: int = max_link_capacity
-        self.wish_to_occupy: list = []
-        self.occupied: list = []
+        if not self.occupied:
+            return 0
+        return len([
+            drone for drone in self.occupied
+            if drone.is_next_step_accessible(drone.path_to_follow)
+        ])
+
+    def calculate_wait_cost(self, drone_id: int) -> int:
+
+        cost: int = 1
+        for drone_wish in self.wish_to_occupy:
+            if drone_wish.id == drone_id:
+                break
+            cost += 1
+        return abs(
+            cost - (self.max_link_capacity - len(self.occupied))
+        ) - self.free_spaces()
+
+    def is_accessible(self, drone_id: int) -> bool:
+
+        space_remaining: int = self.max_link_capacity - len(self.occupied)
+
+        return (space_remaining > 0 and (
+            len(self.wish_to_occupy) < space_remaining
+            or drone_id in [
+                drone.id
+                for drone in self.wish_to_occupy[:space_remaining]
+            ]
+        ))
 
 
 class Zone(BaseModel):
@@ -46,9 +70,9 @@ class Zone(BaseModel):
     zone_type: str = Field(default="normal")
     color: str | None = Field(default=None)
     max_drones: int = Field(default=1, gt=0)
-    connections: dict = Field(default={})
-    wish_to_occupy: list = Field(default=[])
-    occupied: list = Field(default=[])
+    connections: dict[str, Connection] = Field(default={})
+    wish_to_occupy: list[any] = Field(default=[])
+    occupied: list[any] = Field(default=[])
 
     @model_validator(mode="after")
     def validate_name(self) -> self:
@@ -92,18 +116,63 @@ class Zone(BaseModel):
 
         return self
 
-    def add_connection(self, new_connection: "Zone", max_cap: int) -> None:
+    def add_connection(
+        self,
+        new_connection: Connection,
+        neighbor: str
+    ) -> None:
 
-        if new_connection.name in self.connections.keys():
+        if neighbor in self.connections.keys():
 
             raise ValueError(
                 f"Connection between '{self.name}' "
-                f"and '{new_connection.name}' "
+                f"and '{neighbor}' "
                 "already exists!"
             )
 
-        self.connections[new_connection.name] = Connection(
-            self,
-            new_connection,
-            max_cap
+        self.connections[neighbor] = new_connection
+
+    def display_zone_info(self) -> None:
+
+        print(
+            f"zone {self.name}: "
+            f"zone type {self.zone_type}, "
+            f"max drones {self.max_drones}, "
+            "connections", end=""
         )
+        for con_name, con in self.connections.items():
+            print(f" {con_name}: first zone={self == con.zone1}", end="")
+
+        print("\n")
+
+    def free_spaces(self) -> int:
+
+        if not self.occupied:
+            return 0
+        return len([
+            drone for drone in self.occupied
+            if drone.is_next_step_accessible(drone.path_to_follow)
+        ])
+
+    def calculate_wait_cost(self, drone_id: int) -> int:
+
+        cost: int = 1
+        for drone_wish in self.wish_to_occupy:
+            if drone_wish.id == drone_id:
+                break
+            cost += 1
+        return abs(
+            cost - (self.max_drones - len(self.occupied))
+        ) - self.free_spaces()
+
+    def is_accessible(self, drone_id: int) -> bool:
+
+        space_remaining: int = self.max_drones - len(self.occupied)
+
+        return (space_remaining > 0 and (
+            len(self.wish_to_occupy) < space_remaining
+            or drone_id in [
+                drone.id
+                for drone in self.wish_to_occupy[:space_remaining]
+            ]
+        ))

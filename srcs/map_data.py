@@ -1,21 +1,10 @@
 import re
 from typing import Callable
 from pydantic import ValidationError
-from .zones import Zone
-from .drones import Drone
+from .zones import Zone, Connection
 
 
 class Map:
-
-    def create_drones(self) -> None:
-
-        self.drones: list[Drone] = []
-
-        for drone_id in range(1, self.nb_drones + 1):
-
-            self.drones.append(Drone(
-
-                ))
 
     def validate_nb_drones(self, nb_drones: str) -> None:
 
@@ -68,6 +57,14 @@ class Map:
 
         self.end_hub = self.add_hub(end_hub)
 
+        if "max_drones" in end_hub:
+
+            if self.end_hub.max_drones < self.nb_drones:
+                raise ValueError(
+                    "The drone capacity of the ending hub "
+                    "should not be inferior to the number of drones"
+                )
+
         if self.end_hub.zone_type == "blocked":
             raise ValueError(
                 "The end hub should not be a blocked zone"
@@ -109,8 +106,14 @@ class Map:
                 f"Invalid hub(s) given for connection '{connection_params[0]}'"
             )
 
-        fst_zone.add_connection(scd_zone, con_metadata)
-        scd_zone.add_connection(fst_zone, con_metadata)
+        connection: Connection = Connection(
+            name=connection_params[0],
+            zone1=fst_zone,
+            zone2=scd_zone,
+            max_link_capacity=con_metadata
+        )
+        fst_zone.add_connection(connection, scd_zone.name)
+        scd_zone.add_connection(connection, fst_zone.name)
 
     def find_hub(self, hub_name: str) -> Zone | None:
 
@@ -179,7 +182,7 @@ class Map:
             color=metadata[1],
             max_drones=metadata[2]
         )
-        print(f"successfully created hub {hub_created.name}")
+        # print(f"successfully created hub {hub_created.name}")
 
         self.hubs.append(hub_created)
 
@@ -191,7 +194,9 @@ class MapParser:
     def parse_map(self, filename: str) -> Map | None:
 
         self.map: Map = Map()
-        self.lines: dict[str, tuple[list[str], Callable]] = {
+        self.lines: dict[
+            str, tuple[list[str], Callable[[str], None | Zone]]
+        ] = {
             "nb_drones": ([], self.map.validate_nb_drones),
             "start_hub": ([], self.map.validate_start_hub),
             "end_hub": ([], self.map.validate_end_hub),
@@ -276,7 +281,7 @@ class MapParser:
         if parameter not in self.lines.keys():
 
             raise ValueError(
-                f"Invalid parameter type '{parameter}'\n"
+                f"Invalid parameter type '{parameter}' for line '{line}'\n"
                 "Parameter must be one of 'nb_drones', 'start_hub', "
                 "'end_hub', 'hub', or 'connection'"
             )

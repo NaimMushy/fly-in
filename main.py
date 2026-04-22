@@ -1,4 +1,4 @@
-from .big_file import MapParser, Map, Path, Pathfinder, DroneMonitor
+from srcs import MapParser, Map, Pathfinder, Path, DroneMonitor
 
 
 if __name__ == "__main__":
