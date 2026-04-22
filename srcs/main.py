@@ -1,6 +1,4 @@
-from .parsing import MapParser, Map
-from .path import Pathfinder
-from .drones import DroneMonitor
+from .big_file import MapParser, Map, Path, Pathfinder, DroneMonitor
 
 
 if __name__ == "__main__":
@@ -13,19 +11,27 @@ if __name__ == "__main__":
         drone_map: Map | None = map_parser.parse_map(sys.argv[1])
         if not drone_map:
             print("\n==== An error has been caught while parsing the map ====")
-        try:
-            pathfinder: Pathfinder = Pathfinder(drone_map)
-        except ValueError as ve:
-            print(f"{ve}\n")
         else:
-            drone_monitor: DroneMonitor = DroneMonitor(
-                drone_map,
-                pathfinder
+            pathfinder: Pathfinder = Pathfinder(drone_map)
+            paths: list[Path] = pathfinder.calculate_paths(
+                drone_map.start_hub,
+                [],
+                0,
+                drone_map.end_hub,
+                []
             )
-            while drone_monitor.drones:
-                drone_monitor.update_drones()
+            if not paths:
+                print("No paths found, map considered invalid!\n")
 
-            print("==== All drones have been successfully delivered! ====")
+            else:
+                drone_monitor: DroneMonitor = DroneMonitor(
+                    drone_map,
+                    pathfinder
+                )
+                while drone_monitor.drones:
+                    drone_monitor.update_drones()
+
+                print("==== All drones have been successfully delivered! ====")
 
     else:
 
