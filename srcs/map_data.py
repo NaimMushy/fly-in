@@ -57,14 +57,6 @@ class Map:
 
         self.end_hub = self.add_hub(end_hub)
 
-        if "max_drones" in end_hub:
-
-            if self.end_hub.max_drones < self.nb_drones:
-                raise ValueError(
-                    "The drone capacity of the ending hub "
-                    "should not be inferior to the number of drones"
-                )
-
         if self.end_hub.zone_type == "blocked":
             raise ValueError(
                 "The end hub should not be a blocked zone"
