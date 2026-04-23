@@ -1,4 +1,5 @@
 import re
+from rich.color import Color, ColorParseError
 from typing import Callable
 from pydantic import ValidationError
 from .zones import Zone, Connection
@@ -301,7 +302,7 @@ class MapParser:
             )
 
         zone: str = "normal"
-        color: str = "\x1B[37m"
+        color: str = "white"
         max_drones: int = 1
 
         zone_defined: bool = False
@@ -351,7 +352,13 @@ class MapParser:
                         "Color for the zone is already defined"
                     )
 
-                # color = match.group(2)
+                try:
+                    color_parsed: Color = Color.parse(match.group(2))
+                except ColorParseError:
+                    pass
+                else:
+                    color = color_parsed.name
+
                 color_defined = True
 
             elif match.group(1) == "max_drones":

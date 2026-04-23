@@ -6,7 +6,8 @@ NAME		=	fly_in.py
 
 INSTALLS	=	pydantic 							\
 				flake8								\
-				mypy
+				mypy								\
+				rich
 
 #-------------------------------- RULES --------------------------------------#
 
