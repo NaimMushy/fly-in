@@ -13,6 +13,7 @@ class MapSquare:
         self.zone: Zone | None = zone
         self.cur_line_nb: int = 0
         self.display_over: bool = False
+        self.fill_square()
 
     def fill_square(self) -> None:
 
@@ -91,15 +92,15 @@ class TuiDisplay:
 
                 zone: Zone | None = self.find_zone(board_x, board_y)
                 if zone:
-                    self.board[zone.y][zone.x] = MapSquare(
+                    self.board[zone.y].append(MapSquare(
                         zone.max_drones,
                         zone
-                    )
+                    ))
                 else:
-                    self.board[board_y][board_x] = MapSquare(
+                    self.board[board_y].append(MapSquare(
                         1,
                         None
-                    )
+                    ))
 
     def reset_squares(self) -> None:
 
