@@ -32,12 +32,17 @@ if __name__ == "__main__":
                     drone_map,
                     drone_monitor.drones
                 )
-                while drone_monitor.drones:
+                user_input: str = input("\n> start simulation? (Y/n) ")
+                if user_input in ["y", "Y", ""]:
+                    print("\n==== STARTING SIMULATION ====\n\n")
+                while drone_monitor.drones and user_input in ["y", "Y", ""]:
                     tui_display.display_map()
                     drone_monitor.update_drones()
+                    if drone_monitor.drones:
+                        user_input = input("\n> next turn? (Y/n) ")
 
                 print(
-                    "==== All drones have been successfully delivered! "
+                    "\n==== SIMULATION OVER "
                     f"TURNS={drone_monitor.turns} ===="
                 )
 

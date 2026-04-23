@@ -257,6 +257,6 @@ class DroneMonitor:
             if drone.current_zone == drone.goal:
                 self.drones.remove(drone)
 
-        print("\n")
+        print()
         time.sleep(0.1)
         self.turns += 1

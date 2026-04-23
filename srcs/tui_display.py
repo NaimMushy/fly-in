@@ -161,5 +161,6 @@ class TuiDisplay:
                     else:
                         print(f"{' ' * (square.width)}", end="")
                 print()
+        print()
         self.reset_squares()
         time.sleep(0.1)
