@@ -1,4 +1,4 @@
-from srcs import MapParser, Map, Pathfinder, Path, DroneMonitor
+from srcs import MapParser, Map, Pathfinder, Path, DroneMonitor, TuiDisplay
 
 
 if __name__ == "__main__":
@@ -28,8 +28,13 @@ if __name__ == "__main__":
                     drone_map,
                     pathfinder
                 )
+                tui_display: TuiDisplay = TuiDisplay(
+                    drone_map,
+                    drone_monitor.drones
+                )
                 while drone_monitor.drones:
                     drone_monitor.update_drones()
+                    tui_display.display_map()
 
                 print(
                     "==== All drones have been successfully delivered! "

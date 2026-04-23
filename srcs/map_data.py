@@ -281,7 +281,7 @@ class MapParser:
         self.lines[parameter][0].append(match.group(2))
 
     @staticmethod
-    def parse_hub_metadata(params: list[str]) -> tuple[str, str | None, int]:
+    def parse_hub_metadata(params: list[str]) -> tuple[str, str, int]:
 
         if len(params) < 3:
             raise ValueError(
@@ -290,7 +290,7 @@ class MapParser:
             )
 
         zone: str = "normal"
-        color: str | None = None
+        color: str = "\x1B[37m"
         max_drones: int = 1
 
         zone_defined: bool = False
