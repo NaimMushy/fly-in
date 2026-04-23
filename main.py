@@ -33,8 +33,8 @@ if __name__ == "__main__":
                     drone_monitor.drones
                 )
                 while drone_monitor.drones:
-                    drone_monitor.update_drones()
                     tui_display.display_map()
+                    drone_monitor.update_drones()
 
                 print(
                     "==== All drones have been successfully delivered! "

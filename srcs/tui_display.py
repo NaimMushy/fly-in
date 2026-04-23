@@ -9,45 +9,84 @@ class MapSquare:
 
     def __init__(self, size: int, zone: Zone | None) -> None:
 
-        self.sz: int = 3 * size
+        self.height: int = 3 + 1 * (
+            0 if not zone
+            else (zone.max_drones - 1) // 2
+        )
+        self.width: int = self.height * 2
+#        if zone:
+#            print(f"x for square zone {zone.name} = {self.width}")
+#            print(f"y for square zone {zone.name} = {self.height}")
         self.zone: Zone | None = zone
         self.cur_line_nb: int = 0
         self.display_over: bool = False
+        self.drone_squares: dict[Drone, tuple[int, int]] = {}
         self.fill_square()
 
     def fill_square(self) -> None:
 
         self.px: list[list[str]] = [
             [
-                " " for _ in range(self.sz)
-            ] for _ in range(self.sz)
+                " " for _ in range(self.width)
+            ] for _ in range(self.height)
         ]
 
         if self.zone:
-            drone_squares: list[tuple[int, int]] = []
-            for _ in range(len(self.zone.occupied)):
-                drone_x: int = 1
-                drone_y: int = 1
-                while (drone_x, drone_y) in drone_squares:
-                    drone_x = random.randint(1, self.sz - 1)
-                    drone_y = random.randint(1, self.sz - 1)
-                drone_squares.append((drone_x, drone_y))
-                self.px[drone_y][drone_x] = "\x1B[37m \x1B[0m"
+            # print(f"found zone : {self.zone.name}\n")
             hor_line: list[str] = [
-                (f"{self.zone.color}-\x1B[0m") for _ in range(self.sz)
+                f"{self.zone.color}--\x1B[0m" for _ in range(self.height)
             ]
-            for line in self.px:
-                if line != self.px[0] and line != self.px[-1]:
-                    line[0] = f"{self.zone.color}|\x1B[0m"
-                    line[-1] = f"{self.zone.color}|\x1B[0m"
+            for line_nb in range(len(self.px)):
+                if line_nb != 0 and line_nb != len(self.px) - 1:
+                    self.px[line_nb][0] = f"{self.zone.color}|\x1B[0m"
+                    self.px[line_nb][-1] = f"{self.zone.color}|\x1B[0m"
+                    # print(f"changing vertical line: {line}\n")
                 else:
-                    line = hor_line
+                    self.px[line_nb] = hor_line
+                    # print(f"changing horizontal line: {line}\n")
+
+    def fill_drones(self) -> None:
+
+        if not self.zone:
+            return
+
+        if self.drone_squares:
+
+            drones_to_discard: dict[Drone, tuple[int, int]] = {
+                drone: drone_coor
+                for drone, drone_coor in self.drone_squares.items()
+                if drone not in self.zone.occupied
+            }
+
+            for drone, drone_coor in drones_to_discard.items():
+
+                self.px[drone_coor[1]][drone_coor[0]] = " "
+                self.drone_squares.pop(drone)
+
+        for drone in self.zone.occupied:
+
+            if drone in self.drone_squares:
+                continue
+
+            drone_x: int = random.randint(1, self.width - 2)
+            drone_y: int = random.randint(1, self.height - 2)
+
+            while (drone_x, drone_y) in self.drone_squares.values():
+
+                drone_x = random.randint(1, self.width - 2)
+                drone_y = random.randint(1, self.height - 2)
+
+            self.drone_squares[drone] = (drone_x, drone_y)
+            # print(f"drone x chosen: {drone_x}, drone y chosen : {drone_y}")
+            self.px[drone_y][drone_x] = f"\x1B[37m{drone.id}\x1B[0m"
 
     def display_square_line(self) -> None:
 
-        print(self.px[self.cur_line_nb], end="")
+        self.fill_drones()
+        for char in self.px[self.cur_line_nb]:
+            print(char, end="")
         self.cur_line_nb += 1
-        if self.cur_line_nb >= self.sz:
+        if self.cur_line_nb >= len(self.px):
             self.display_over = True
 
 
@@ -112,11 +151,15 @@ class TuiDisplay:
     def display_map(self) -> None:
 
         for row in self.board:
-            for square in row:
-                if not square.display_over:
-                    square.display_square_line()
-                else:
-                    print(" " * square.sz, end="")
-            print()
+            while not all([
+                square.display_over
+                for square in row
+            ]):
+                for square in row:
+                    if not square.display_over:
+                        square.display_square_line()
+                    else:
+                        print(f"{' ' * (square.width)}", end="")
+                print()
         self.reset_squares()
         time.sleep(0.1)

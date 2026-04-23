@@ -163,7 +163,7 @@ class Map:
                 )
 
         metadata: tuple[
-            str, str | None, int
+            str, str, int
         ] = MapParser.parse_hub_metadata(hub_params)
 
         hub_created: Zone = Zone(
@@ -207,57 +207,68 @@ class MapParser:
                     if not line.startswith("#") and line.strip():
 
                         if fst:
+
                             if "nb_drones" not in line:
                                 raise ValueError(
                                     "The first line should be "
                                     "the number of drones"
                                 )
                             fst = False
+
                         self.parse_line(line.strip())
-
-                for parameter in self.lines.values():
-
-                    for definition in parameter[0]:
-                        parameter[1](definition)
-
-            if not hasattr(self.map, "start_hub"):
-
-                raise ValueError(
-                    "Missing start hub!"
-                )
-
-            if not hasattr(self.map, "end_hub"):
-
-                raise ValueError(
-                    "Missing end hub!"
-                )
-
-            if not hasattr(self.map, "nb_drones"):
-
-                raise ValueError(
-                    "Missing number of drones!"
-                )
 
         except Exception as err:
 
             print(
-                "Caught Parsing Error :"
+                f"Caught Parsing Error for line:\n'{line}'"
             )
 
             if isinstance(err, ValidationError):
 
                 for error in err.errors():
-                    print(error["msg"])
+                    print(f" => {error['msg']}")
 
             else:
 
-                print(err)
+                print(f" => {err}")
 
             return None
 
         else:
 
-            return self.map
+            for parameter in self.lines.values():
+
+                for definition in parameter[0]:
+                    parameter[1](definition)
+
+            try:
+
+                if not hasattr(self.map, "start_hub"):
+
+                    raise ValueError(
+                        "Missing start hub!"
+                    )
+
+                if not hasattr(self.map, "end_hub"):
+
+                    raise ValueError(
+                        "Missing end hub!"
+                    )
+
+                if not hasattr(self.map, "nb_drones"):
+
+                    raise ValueError(
+                        "Missing number of drones!"
+                    )
+
+            except ValueError as ve:
+
+                print(f"Caught Parsing Error: {ve}")
+                return None
+
+            else:
+
+                return self.map
 
     def parse_line(self, line: str) -> None:
 
@@ -340,7 +351,7 @@ class MapParser:
                         "Color for the zone is already defined"
                     )
 
-                color = match.group(2)
+                # color = match.group(2)
                 color_defined = True
 
             elif match.group(1) == "max_drones":

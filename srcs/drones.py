@@ -8,11 +8,13 @@ class Drone:
 
     def __init__(
         self, drone_id: int,
-        start_pos: Zone
+        start_zone: Zone,
+        end_hub: Zone
     ) -> None:
 
         self.id: int = drone_id
-        self.current_zone: Zone | Connection = start_pos
+        self.current_zone: Zone | Connection = start_zone
+        self.goal: Zone = end_hub
         self.occupying: list[Zone | Connection] = [self.current_zone]
         self.waiting: bool = False
 
@@ -82,7 +84,10 @@ class Drone:
             isinstance(self.current_zone, Connection)
             or (
                 hasattr(self, "next_zone")
-                and self.current_zone == self.next_zone
+                and (
+                    self.current_zone == self.next_zone
+                    or self.next_zone == self.goal
+                )
             )
         ):
             return True
@@ -203,7 +208,8 @@ class DroneMonitor:
 
             new_drone: Drone = Drone(
                 drone_id,
-                self.drone_map.start_hub
+                self.drone_map.start_hub,
+                self.drone_map.end_hub
             )
             self.drones.append(new_drone)
             self.drone_map.start_hub.occupied.append(new_drone)
@@ -226,25 +232,31 @@ class DroneMonitor:
 #            print()
 
         # print("\n==== DRONES TURN ACTION ====\n\n")
+        moving_drones: list[Drone] = []
         for drone in self.drones:
 
-            drone.turn_action()
+            if drone not in moving_drones:
+                drone.turn_action()
+                if drone.current_zone == drone.goal:
+                    for occupying in drone.occupying:
+                        occupying.occupied.remove(drone)
+                    moving_drones.append(drone)
 
-        moving_drones: list[Drone] = [
+        moving_drones += [
             drone for drone in self.drones
-            if not drone.waiting
+            if drone not in moving_drones
+            and not drone.waiting
         ]
 
         # print("\n==== DISPLAYING DRONE MOVEMENTS ====\n\n")
+        print("==== DRONE MOVEMENTS ====\n")
         for drone in moving_drones:
             if drone != moving_drones[0]:
                 print(" ", end="")
             print(f"D{drone.id}-{drone.current_zone.name}", end="")
-            if drone.current_zone == self.drone_map.end_hub:
-                for occupying in drone.occupying:
-                    occupying.occupied.remove(drone)
+            if drone.current_zone == drone.goal:
                 self.drones.remove(drone)
 
-        print()
+        print("\n")
         time.sleep(0.1)
         self.turns += 1
