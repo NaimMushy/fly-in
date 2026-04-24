@@ -55,12 +55,37 @@ class MapZone:
             char_type: Text(char, style=self.zone.color)
             for char_type, char in characters.items()
         }
+        self.squares: list[list[MapSquare | None]] = [
+            [None for _ in range(self.sz * 2)]
+            for _ in range(self.sz)
+        ]
+        # print(f"created zone {self.zone.name} with size = {self.sz}\n")
+
+    @property
+    def start_row(self) -> int:
+
+        return self.squares[0][0].row
+
+    @property
+    def end_row(self) -> int:
+
+        return self.squares[-1][-1].row
+
+    @property
+    def start_col(self) -> int:
+
+        return self.squares[0][0].col
+
+    @property
+    def end_col(self) -> int:
+
+        return self.squares[-1][-1].col
 
     def is_in(self, row: int, col: int) -> bool:
 
         return (
-            self.start_coor[0] <= row <= self.end_coor[0]
-            and self.start_coor[1] <= col <= self.end_coor[1]
+            self.start_coor[0] <= row < self.end_coor[0]
+            and self.start_coor[1] <= col < self.end_coor[1]
         )
 
     def get_zone_char(self, minirow: int, minicol: int) -> Text:
@@ -161,7 +186,7 @@ class TuiDisplay:
         for zone_name, zone in self.zones.items():
             self.add_title(zone, zone_name)
 
-        print(f"any None remaining:{any(square is None for row in self.board for square in row)}\n")
+        # print(f"any None remaining:{any(square is None for row in self.board for square in row)}\n")
 
     def create_line(self, row_nb: int, col_nb: int) -> None:
 
@@ -171,12 +196,20 @@ class TuiDisplay:
 
             for minicol in range(self.square_sz * 2):
 
+                sq_row: int = row_nb * self.square_sz + minirow
+                sq_col: int = col_nb * (self.square_sz * 2) + minicol
                 if zone and zone.is_in(minirow, minicol):
+                    # print(f"square row={minirow} col={minicol} is part of zone {zone.zone.name} with start coor = {zone.start_coor} and end coor = {zone.end_coor}\n")
                     cur_square: MapSquare = MapSquare(
                         SquareType.ZONE,
-                        (minirow, minicol),
+                        (sq_row, sq_col),
                         zone.get_zone_char(minirow, minicol)
                     )
+                    zone.squares[
+                        minirow - zone.start_coor[0]
+                    ][
+                        minicol - zone.start_coor[1]
+                    ] = cur_square
 #                elif self.is_connection(minirow, minicol):
 #                    cur_square = MapSquare(
 #                        SquareType.CONNECTION,
@@ -187,14 +220,10 @@ class TuiDisplay:
                 else:
                     cur_square = MapSquare(
                         SquareType.EMPTY,
-                        (minirow, minicol),
+                        (sq_row, sq_col),
                         Text(self.characters["empty"])
                     )
-                self.board[
-                    row_nb * self.square_sz + minirow
-                ][
-                    col_nb * (self.square_sz * 2) + minicol
-                ] = cur_square
+                self.board[sq_row][sq_col] = cur_square
 
     def add_title(self, zone: MapZone, name: str) -> None:
 
@@ -203,18 +232,18 @@ class TuiDisplay:
         self.add_row_after(zone, 1)
 
         if letters_to_fit <= 0:
-            start_point: int = zone.start_coor[1]
+            start_point: int = zone.start_col
         else:
             self.add_col_before(zone, letters_to_fit // 2)
             self.add_col_after(zone, letters_to_fit // 2 + letters_to_fit % 2)
-            start_point = zone.start_coor[1] - letters_to_fit // 2
+            start_point = zone.start_col - letters_to_fit // 2
 
         for char_nb in range(len(name)):
 
-            self.board[zone.end_coor[0] + 1][
+            self.board[zone.end_row + 1][
                 start_point + char_nb
             ].char = Text(name[char_nb], style=zone.zone.color)
-            self.board[zone.end_coor[0] + 1][
+            self.board[zone.end_row + 1][
                 start_point + char_nb
             ].type = SquareType.TITLE
 
@@ -225,16 +254,16 @@ class TuiDisplay:
             new_row: list[None | MapSquare] = [
                 MapSquare(
                     SquareType.EMPTY,
-                    (zone.end_coor[0] + 1, col),
+                    (zone.end_row + 1, col),
                     Text(self.characters["empty"])
                 )
                 for col in range(self.square_sz * self.width * 2)
             ]
-            if zone.end_coor[0] != len(self.board) - 1:
-                self.board.insert(zone.end_coor[0] + 1, new_row)
+            if zone.end_row != len(self.board) - 1:
+                self.board.insert(zone.end_row + 1, new_row)
             else:
                 self.board.append(new_row)
-            change_row: int = zone.end_coor[0] + 2
+            change_row: int = zone.end_row + 2
             while change_row < len(self.board):
                 for square in self.board[change_row]:
                     square.row += 1
@@ -246,12 +275,12 @@ class TuiDisplay:
 
             for row in range(len(self.board)):
 
-                self.board[row].insert(zone.start_coor[1], MapSquare(
+                self.board[row].insert(zone.start_col, MapSquare(
                     SquareType.EMPTY,
-                    (row, zone.start_coor[1]),
+                    (row, zone.start_col),
                     Text(self.characters["empty"])
                 ))
-                change_col: int = zone.start_coor[1] + 1
+                change_col: int = zone.start_col + 1
                 while change_col < len(self.board[row]):
                     self.board[row][change_col].col = change_col
                     change_col += 1
@@ -264,14 +293,14 @@ class TuiDisplay:
 
                 new_col: MapSquare = MapSquare(
                     SquareType.EMPTY,
-                    (row, zone.end_coor[1] + 1),
+                    (row, zone.end_col + 1),
                     Text(self.characters["empty"])
                 )
-                if zone.end_coor[1] == len(self.board[row]) - 1:
+                if zone.end_col == len(self.board[row]) - 1:
                     self.board[row].append(new_col)
                 else:
-                    self.board[row].insert(zone.end_coor[1] + 1, new_col)
-                change_col: int = zone.end_coor[1] + 1
+                    self.board[row].insert(zone.end_col + 1, new_col)
+                change_col: int = zone.end_col + 1
                 while change_col < len(self.board[row]):
                     self.board[row][change_col].col = change_col
                     change_col += 1
