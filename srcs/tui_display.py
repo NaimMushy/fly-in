@@ -59,6 +59,7 @@ class MapZone:
             [None for _ in range(self.sz * 2)]
             for _ in range(self.sz)
         ]
+        self.title: list[MapSquare | None] = []
         # print(f"created zone {self.zone.name} with size = {self.sz}\n")
 
     @property
@@ -83,15 +84,23 @@ class MapZone:
 
     def is_in(self, row: int, col: int) -> bool:
 
-        return (
-            self.start_coor[0] <= row < self.end_coor[0]
-            and self.start_coor[1] <= col < self.end_coor[1]
+        if (
+            0 <= row - self.start_row < self.sz
+            and 0 <= col - self.start_col < self.sz * 2
+        ):
+            return True
+        return self.title != [] and (
+            self.title[0].row <= row <= self.title[-1].row
+            and self.title[0].col <= col <= self.title[-1].col
         )
 
     def get_zone_char(self, minirow: int, minicol: int) -> Text:
 
-        if minirow != self.start_coor[0] and minirow != self.end_coor[0]:
-            if minicol == self.start_coor[1] or minicol == self.end_coor[1]:
+        if minirow != self.start_coor[0] and minirow != self.end_coor[0] - 1:
+            if (
+                minicol == self.start_coor[1]
+                or minicol == self.end_coor[1] - 1
+            ):
                 return self.characters["vertical"]
             else:
                 return self.characters["empty"]
@@ -99,12 +108,21 @@ class MapZone:
             corner: str = "up"
         else:
             corner = "down"
-        if minicol != self.start_coor[1] and minicol != self.end_coor[1]:
+        if minicol != self.start_coor[1] and minicol != self.end_coor[1] - 1:
             return self.characters["horizontal"]
         elif minicol == self.start_coor[1]:
             return self.characters[corner + "left_corner"]
         else:
+            # print(f"found last corner with minirow = {minirow} and minicol = {minicol}\n")
             return self.characters[corner + "right_corner"]
+
+    def display_zone(self, console: Console) -> None:
+
+        for row in self.squares:
+            for square in row:
+                console.print(square.char, end="")
+            print()
+        print()
 
 
 class TuiDisplay:
@@ -138,6 +156,18 @@ class TuiDisplay:
             max(self.map.hubs, key=lambda hub: self.get_zone_sz(hub))
         )
 
+        self.hubs: list[Zone] = []
+
+        for mininum_row in range(min_y, max_y + 1):
+            for mininum_col in range(min_x, max_x + 1):
+                for hub in self.map.hubs:
+                    if (
+                        hub not in self.hubs
+                        and hub.y == mininum_row
+                        and hub.x == mininum_col
+                    ):
+                        self.hubs.append(hub)
+
         # print(f"map width: {self.width}, map height: {self.height}, square size: {self.square_sz}\n")
 
     def find_map_zone(self, seek_x: int, seek_y: int) -> MapZone | None:
@@ -146,6 +176,15 @@ class TuiDisplay:
 
             if hub.x + self.bias_x == seek_x and hub.y + self.bias_y == seek_y:
                 return self.zones[hub.name]
+
+        return None
+
+    def is_in_a_zone(self, row: int, col: int) -> MapZone | None:
+
+        for zone in self.zones.values():
+
+            if zone.is_in(row, col):
+                return zone
 
         return None
 
@@ -165,7 +204,7 @@ class TuiDisplay:
             "downright_corner": "╝",
             "empty": " "
         }
-        for hub in self.map.hubs:
+        for hub in self.hubs:
             self.zones[hub.name] = MapZone(
                 hub,
                 self.square_sz,
@@ -184,8 +223,10 @@ class TuiDisplay:
                 self.create_line(row_nb, col_nb)
 
         for zone_name, zone in self.zones.items():
+#            print(f"this is zone {zone_name}:")
+#            zone.display_zone(self.console)
+#            print(f"any None remaining:{any(square is None for row in zone.squares for square in row)}\n")
             self.add_title(zone, zone_name)
-
         # print(f"any None remaining:{any(square is None for row in self.board for square in row)}\n")
 
     def create_line(self, row_nb: int, col_nb: int) -> None:
@@ -198,8 +239,10 @@ class TuiDisplay:
 
                 sq_row: int = row_nb * self.square_sz + minirow
                 sq_col: int = col_nb * (self.square_sz * 2) + minicol
-                if zone and zone.is_in(minirow, minicol):
-                    # print(f"square row={minirow} col={minicol} is part of zone {zone.zone.name} with start coor = {zone.start_coor} and end coor = {zone.end_coor}\n")
+                if zone and (
+                    zone.start_coor[0] <= minirow < zone.end_coor[0]
+                    and zone.start_coor[1] <= minicol < zone.end_coor[1]
+                ):
                     cur_square: MapSquare = MapSquare(
                         SquareType.ZONE,
                         (sq_row, sq_col),
@@ -210,6 +253,7 @@ class TuiDisplay:
                     ][
                         minicol - zone.start_coor[1]
                     ] = cur_square
+                    # print(f"square row={minirow} col={minicol} is part of zone {zone.zone.name} with char : {cur_square.char}\n")
 #                elif self.is_connection(minirow, minicol):
 #                    cur_square = MapSquare(
 #                        SquareType.CONNECTION,
@@ -229,15 +273,54 @@ class TuiDisplay:
 
         letters_to_fit: int = len(name) - zone.sz * 2
 
-        self.add_row_after(zone, 1)
+        neighbor: MapZone | None = self.is_in_a_zone(
+            zone.end_row + 1,
+            zone.start_col
+        )
+        if neighbor or zone.end_row + 1 == len(self.board):
+            # print(f"found neighbor {neighbor.zone.name} for zone {zone.zone.name} (row after)\n")
+            self.add_row_after(zone, 2)
 
         if letters_to_fit <= 0:
-            start_point: int = zone.start_col
+
+            neighbor = self.is_in_a_zone(
+                zone.end_row + 1,
+                zone.start_col - 1
+            )
+            if neighbor:
+                self.add_col_before(zone, 1)
+            neighbor = self.is_in_a_zone(
+                zone.end_row,
+                zone.end_col + 1
+            )
+            if neighbor:
+                self.add_col_after(zone, 1)
+            start_point: int = zone.start_col - (
+                letters_to_fit // 2 + letters_to_fit % 2
+            )
         else:
-            self.add_col_before(zone, letters_to_fit // 2)
-            self.add_col_after(zone, letters_to_fit // 2 + letters_to_fit % 2)
+            neighbor = self.is_in_a_zone(
+                zone.end_row + 1,
+                zone.start_col - (
+                    letters_to_fit // 2 if letters_to_fit >= 2 else 1
+                ) - 1
+            )
+            if neighbor or zone.start_col == 0:
+                # print(f"found neighbor {neighbor.zone.name} for zone {zone.zone.name} (col before)\n")
+                self.add_col_before(zone, letters_to_fit // 2 + 1)
+            neighbor = self.is_in_a_zone(
+                zone.end_row,
+                zone.end_col + letters_to_fit // 2 + 1
+            )
+            if neighbor or zone.end_col == len(self.board[0]) - 1:
+#                if neighbor:
+#                    print(f"found neighbor {neighbor.zone.name} for zone {zone.zone.name} (col after)\n")
+                self.add_col_after(
+                    zone, letters_to_fit // 2 + letters_to_fit % 2 + 1
+                )
             start_point = zone.start_col - letters_to_fit // 2
 
+        # print(f"start col for zone {zone.zone.name} = {zone.start_col}, starting point of title = {start_point}\n")
         for char_nb in range(len(name)):
 
             self.board[zone.end_row + 1][
@@ -246,6 +329,9 @@ class TuiDisplay:
             self.board[zone.end_row + 1][
                 start_point + char_nb
             ].type = SquareType.TITLE
+            zone.title.append(
+                self.board[zone.end_row + 1][start_point + char_nb]
+            )
 
     def add_row_after(self, zone: MapZone, nb_rows: int) -> None:
 
@@ -271,36 +357,38 @@ class TuiDisplay:
 
     def add_col_before(self, zone: MapZone, nb_cols: int) -> None:
 
-        for _ in range(nb_cols):
+        for _ in range(nb_cols * 2):
 
+            start: int = zone.start_col
             for row in range(len(self.board)):
 
-                self.board[row].insert(zone.start_col, MapSquare(
+                self.board[row].insert(start, MapSquare(
                     SquareType.EMPTY,
-                    (row, zone.start_col),
+                    (row, start),
                     Text(self.characters["empty"])
                 ))
-                change_col: int = zone.start_col + 1
+                change_col: int = start + 1
                 while change_col < len(self.board[row]):
                     self.board[row][change_col].col = change_col
                     change_col += 1
 
     def add_col_after(self, zone: MapZone, nb_cols: int) -> None:
 
-        for _ in range(nb_cols):
+        for _ in range(nb_cols * 2):
 
+            end: int = zone.end_col
             for row in range(len(self.board)):
 
                 new_col: MapSquare = MapSquare(
                     SquareType.EMPTY,
-                    (row, zone.end_col + 1),
+                    (row, end + 1),
                     Text(self.characters["empty"])
                 )
-                if zone.end_col == len(self.board[row]) - 1:
+                if end == len(self.board[row]) - 1:
                     self.board[row].append(new_col)
                 else:
-                    self.board[row].insert(zone.end_col + 1, new_col)
-                change_col: int = zone.end_col + 1
+                    self.board[row].insert(end + 1, new_col)
+                change_col: int = end + 1
                 while change_col < len(self.board[row]):
                     self.board[row][change_col].col = change_col
                     change_col += 1
