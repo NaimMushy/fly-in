@@ -3,7 +3,7 @@ from enum import Enum
 from rich import print
 from rich.text import Text
 from rich.console import Console
-from .zones import Zone
+from .zones import Zone, Connection
 from .map_data import Map
 from .drones import Drone
 
@@ -31,6 +31,55 @@ class MapSquare:
         self.col: int = coor[1]
         self.char: Text = char
 
+
+#class MapConnection:
+#
+#    def __init__(self, connection: Connection, z1: MapZone, z2: MapZone) -> None:
+#
+#        self.con: Connection = connection
+#        self.z1: MapZone = z1
+#        self.z2: MapZone = z2
+#        self.squares: list[MapSquare] = []
+#
+#    def find_con_points(self) -> tuple[tuple[int, int], tuple[int, int]]:
+#
+#        row_diff: int = self.z1.zone.y - self.z2.zone.y
+#        col_diff: int = self.z1.zone.x - self.z2.zone.x
+#        if row_diff < 0:
+#            self.start_dir = "down"
+#            if col_diff < 0:
+#                self.end_dir = "left"
+#            elif col_diff > 0:
+#                self.end_dir = "right"
+#            else:
+#                self.end_dir = "up"
+#        else:
+#            self.start_dir = "right"
+#            self.end_dir = "left"
+#        self.calculate_con_path()
+#
+#    def get_point_available(direction: str, zone: MapZone) -> tuple[int, int]:
+#
+#        if direction == "down":
+#            point: tuple[int, int] = zone.get_down_point()
+#            if not point:
+#                direction = "right"
+#            else:
+#                return point
+#        if direction == "right":
+#            point: tuple[int, int] = zone.get_right_point()
+#            if not point:
+#                direction = "left"
+#            else:
+#                return point
+#        if direction == "left":
+#            point: tuple[int, int] = zone.get_left_point()
+#            if not point:
+#                direction = "up"
+#            else:
+#                return point
+#        if direction == "up":
+#            point: tuple[int, int]
 
 class MapZone:
 
@@ -103,7 +152,7 @@ class MapZone:
             ):
                 return self.characters["vertical"]
             else:
-                return self.characters["empty"]
+                return self.characters["space"]
         if minirow == self.start_coor[0]:
             corner: str = "up"
         else:
@@ -202,7 +251,8 @@ class TuiDisplay:
             "upright_corner": "╗",
             "downleft_corner": "╚",
             "downright_corner": "╝",
-            "empty": " "
+            "space": " ",
+            "empty": ""
         }
         for hub in self.hubs:
             self.zones[hub.name] = MapZone(
@@ -265,7 +315,7 @@ class TuiDisplay:
                     cur_square = MapSquare(
                         SquareType.EMPTY,
                         (sq_row, sq_col),
-                        Text(self.characters["empty"])
+                        Text(self.characters["space"])
                     )
                 self.board[sq_row][sq_col] = cur_square
 
@@ -341,7 +391,7 @@ class TuiDisplay:
                 MapSquare(
                     SquareType.EMPTY,
                     (zone.end_row + 1, col),
-                    Text(self.characters["empty"])
+                    Text(self.characters["space"])
                 )
                 for col in range(self.square_sz * self.width * 2)
             ]
@@ -365,7 +415,7 @@ class TuiDisplay:
                 self.board[row].insert(start, MapSquare(
                     SquareType.EMPTY,
                     (row, start),
-                    Text(self.characters["empty"])
+                    Text(self.characters["space"])
                 ))
                 change_col: int = start + 1
                 while change_col < len(self.board[row]):
@@ -382,7 +432,7 @@ class TuiDisplay:
                 new_col: MapSquare = MapSquare(
                     SquareType.EMPTY,
                     (row, end + 1),
-                    Text(self.characters["empty"])
+                    Text(self.characters["space"])
                 )
                 if end == len(self.board[row]) - 1:
                     self.board[row].append(new_col)
@@ -393,7 +443,18 @@ class TuiDisplay:
                     self.board[row][change_col].col = change_col
                     change_col += 1
 
+
 #    def create_connections(self) -> None:
+#
+#        self.connections: dict[str, MapConnection] = {}
+#        for zone in self.zones.values():
+#
+#            for connection in zone.zone.connections.values():
+#
+#                if connection.name in self.connections.keys():
+#                    continue
+#
+#                new_connection: MapConnection = MapConnection(connection)
 #
 #        self.zones: dict[Zone, tuple[tuple[int, int], tuple[int, int]]] = {}
 #        self.total_height: int = 0
