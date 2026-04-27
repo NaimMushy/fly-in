@@ -29,8 +29,7 @@ if __name__ == "__main__":
                     pathfinder
                 )
                 tui_display: TuiDisplay = TuiDisplay(
-                    drone_map,
-                    drone_monitor.drones
+                    drone_map
                 )
                 user_input: str = input("\n> start simulation? (Y/n) ")
                 if user_input in ["y", "Y", ""]:
