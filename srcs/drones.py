@@ -1,6 +1,7 @@
 from .zones import Zone, Connection
 from .map_data import Map
 from .path import Path, Pathfinder
+from .state import State
 import time
 
 
@@ -17,6 +18,7 @@ class Drone:
         self.goal: Zone = end_hub
         self.occupying: list[Zone | Connection] = [self.current_zone]
         self.waiting: bool = False
+        self.turns: int = 0
 
     def update_intent(self) -> None:
 
@@ -185,14 +187,6 @@ class Drone:
 
         self.next_zone: Zone = self.path_to_follow.path[0]
         self.update_intent()
-#        if self.id == 6:
-#            print("\n\nall possible paths:\n")
-#            for path in possible_paths:
-#                path.display_path()
-#                print()
-#            print("\npath chosen by D6:")
-#            self.path_to_follow.display_path()
-#            print()
 
 
 class DroneMonitor:
@@ -202,6 +196,7 @@ class DroneMonitor:
         self.drone_map: Map = drone_map
         self.pathfinder: Pathfinder = pathfinder
         self.drones: list[Drone] = []
+        self.drones_delivered: list[Drone] = []
         self.turns: int = 0
 
         for drone_id in range(1, self.drone_map.nb_drones + 1):
@@ -214,24 +209,18 @@ class DroneMonitor:
             self.drones.append(new_drone)
             self.drone_map.start_hub.occupied.append(new_drone)
 
-#        print("\n==== DRONES ====\n\n")
-#        for drone in self.drones:
-#            print(f"-> drone D{drone.id}")
+    @property
+    def avg(self) -> int:
 
-    def update_drones(self) -> None:
+        return sum(drone.turns for drone in self.drones_delivered) // self.drone_map.nb_drones
 
-        # print("\n==== REEVALUATING DRONE PATHS ====\n\n")
+    def update_drones(self, state: State) -> None:
+
         for drone in self.drones:
 
             drone.reevaluate_drone_path(self.pathfinder)
+            drone.turns += 1
 
-#        print("\n==== PATHS CHOSEN ====\n\n")
-#        for drone in self.drones:
-#            print(f"-> drone D{drone.id}:\n")
-#            drone.path_to_follow.display_path()
-#            print()
-
-        # print("\n==== DRONES TURN ACTION ====\n\n")
         moving_drones: list[Drone] = []
         for drone in self.drones:
 
@@ -248,15 +237,24 @@ class DroneMonitor:
             and not drone.waiting
         ]
 
-        # print("\n==== DISPLAYING DRONE MOVEMENTS ====\n\n")
-        print("==== DRONE MOVEMENTS ====\n")
+        state.nb_drone_moved = len(moving_drones)
+
+        for drone in self.drones:
+            for occupied in drone.occupying:
+                if isinstance(occupied, Connection) and drone.next_zone.zone_type != "restricted" or occupied == drone.goal:
+                    continue
+                if occupied.name not in state.zones_occupied.keys():
+                    state.zones_occupied[occupied.name] = []
+                state.zones_occupied[occupied.name].append(drone.id)
+
         for drone in moving_drones:
             if drone != moving_drones[0]:
-                print(" ", end="")
-            print(f"D{drone.id}-{drone.current_zone.name}", end="")
+                state.drone_moves += " "
+            state.drone_moves += f"D{drone.id}-{drone.current_zone.name}"
             if drone.current_zone == drone.goal:
+                self.drones_delivered.append(drone)
                 self.drones.remove(drone)
 
-        print()
+        state.drones_delivered = [drone.id for drone in self.drones_delivered]
         time.sleep(0.1)
         self.turns += 1

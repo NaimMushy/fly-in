@@ -1,4 +1,5 @@
 import re
+import time
 from rich.color import Color, ColorParseError
 from typing import Callable
 from pydantic import ValidationError
@@ -196,6 +197,12 @@ class MapParser:
             "hub": ([], self.map.add_hub),
             "connection": ([], self.map.validate_connection)
         }
+        for _ in range(3):
+            print(f"Parsing {filename} ", end="")
+            for _ in range(3):
+                print(".", end="")
+            print()
+            time.sleep(0.3)
 
         try:
 
@@ -220,8 +227,12 @@ class MapParser:
 
         except Exception as err:
 
+            if isinstance(err, OSError):
+                print(f" => {err}")
+                return None
+
             print(
-                f"Caught Parsing Error for line:\n'{line}'"
+                "Caught Parsing Error for line:\n"
             )
 
             if isinstance(err, ValidationError):
