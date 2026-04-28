@@ -176,7 +176,6 @@ class Map:
             color=metadata[1],
             max_drones=metadata[2]
         )
-        # print(f"successfully created hub {hub_created.name}")
 
         self.hubs.append(hub_created)
 
@@ -197,12 +196,20 @@ class MapParser:
             "hub": ([], self.map.add_hub),
             "connection": ([], self.map.validate_connection)
         }
+
+        print(end=f"\nParsing {filename} ")
         for _ in range(3):
-            print(f"Parsing {filename} ", end="")
+
             for _ in range(3):
-                print(".", end="")
-            print()
-            time.sleep(0.3)
+
+                print(end='.', flush=True)
+                time.sleep(0.5)
+
+            print(end='\b\b\b', flush=True)
+            print(end='   ', flush=True)
+            print(end='\b\b\b', flush=True)
+
+        print("\n")
 
         try:
 

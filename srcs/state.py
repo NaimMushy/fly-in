@@ -25,19 +25,19 @@ class State:
         if not self.drone_moves:
             return
         print("\n==== DRONE MOVEMENTS ====\n")
-        print(self.drone_moves)
+        print(f" ➤ {self.drone_moves}")
         if self.info_mode != 0:
             print("\n==== ADDITIONAL INFORMATION ====\n")
-            print(f"number of drones that moved: {self.nb_drone_moved}\n")
-            print("zones currently occupied:\n")
+            print(f" ➤ number of drones that moved: {self.nb_drone_moved}\n")
+            print(" ➤ zones currently occupied:\n")
             if len(self.zones_occupied) == 0:
                 print(" 0")
             for zone, occupying in self.zones_occupied.items():
-                print(f" -> {zone}:", end="")
+                print(f" {zone}:", end="")
                 for drone_id in occupying:
                     print(f" D{drone_id}", end="")
                 print("\n")
-            print("drones already delivered:", end="")
+            print(" ➤ drones already delivered:", end="")
             if len(self.drones_delivered) == 0:
                 print(" 0", end="")
             for drone_id in self.drones_delivered:

@@ -1,5 +1,4 @@
 from .zones import Zone
-from .map_data import Map
 
 
 class Path:
@@ -20,14 +19,10 @@ class Path:
         print(f"cost={self.cost}")
 
 
-class Pathfinder:
+class PathFinder:
 
-    def __init__(self, drone_map: Map) -> None:
-
-        self.map: Map = drone_map
-
+    @staticmethod
     def calculate_paths(
-        self,
         current_hub: Zone,
         current_path: list[Zone],
         cost: int,
@@ -61,7 +56,7 @@ class Pathfinder:
                         if current_path + [current_hub] == path.path:
                             return []
 
-                    self.calculate_paths(
+                    PathFinder.calculate_paths(
                         branch.zone2,
                         current_path + [current_hub],
                         cost + cost_to_add,

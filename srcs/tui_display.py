@@ -1,4 +1,5 @@
 import time
+import pyfiglet
 from rich import print
 from rich.text import Text
 from rich.console import Console
@@ -165,33 +166,55 @@ class TuiDisplay:
     @staticmethod
     def display_menu() -> None:
 
-        print("\nWELCOME TO FLY IN !!!!\n")
+        print(pyfiglet.figlet_format("Welcome to Fly-In !", font="bigchief"), end="")
+        print(r"""
+                              *     .--.
+                                   / /  `
+                  +               | |
+                         '         \ \__,
+                     *          +   '--'  *
+                         +   /\
+            +              .'  '.   *
+                   *      /======\      +
+                         ;:.  _   ;
+                         |:. (_)  |
+                         |:.  _   |
+               +         |:. (_)  |          *
+                         ;:.      ;
+                       .' \:.    / `.
+                      / .-'':._.'`-. \
+                      |/    /||\    \|
+                    _..--'""````""'--.._
+              _.-'``                    ``'-._
+            -'                                '-
+        """)
 
     @staticmethod
-    def display_options(info_mode: int) -> None:
-        print("\nMENU OPTIONS :\n")
-        print(" -> s: SELECT NEW MAP")
-        print(f" -> i: TOGGLE INFO MODE ({'off' if info_mode == 0 else 'on'})")
-        print(" -> q: QUIT PROGRAM")
+    def display_options(info_mode: int, map_file: str) -> None:
+        print("\n✦ MENU OPTIONS ✦\n")
+        print(f"     ➤ s: SELECT NEW MAP (current map: {map_file})")
+        print("     ➤ l: LAUNCH THE DRONES")
+        print(f"     ➤ i: TOGGLE INFO MODE ({'off' if info_mode == 0 else 'on'})")
+        print("     ➤ q: QUIT PROGRAM")
         time.sleep(0.1)
 
     @staticmethod
     def display_state(state: State) -> None:
 
         state.display_info()
-        print("\nOPTIONS :\n")
-        print(" -> n: NEXT STEP")
-        print(" -> p: PREVIOUS STEP")
-        print(" -> r: RETURN TO MENU")
+        print("\n✦ SIMULATION OPTIONS ✦\n")
+        print("     ➤ n: NEXT STEP")
+        print("     ➤ p: PREVIOUS STEP")
+        print("     ➤ m: RETURN TO MENU")
         time.sleep(0.1)
 
     @staticmethod
     def display_end(drone_monitor: DroneMonitor, info_mode: int) -> None:
 
-        print("\n==== END OF THE SIMULATION ====\n")
-        print(f"number of turns: {drone_monitor.turns}")
+        print("\n✦ ✦ ✦ ✦ END OF THE SIMULATION ✦ ✦ ✦ ✦\n")
+        print(f"     ➤ number of turns: {drone_monitor.turns}")
         if info_mode != 0:
-            print(f"average number of turns per drone: {drone_monitor.avg}")
+            print(f"     ➤ average number of turns per drone: {drone_monitor.avg}")
         time.sleep(0.1)
 
     def print_row(self, row: Row, state: State) -> None:

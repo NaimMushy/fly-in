@@ -1,6 +1,6 @@
 from .zones import Zone, Connection
 from .map_data import Map
-from .path import Path, Pathfinder
+from .path import Path, PathFinder
 from .state import State
 import time
 
@@ -135,18 +135,18 @@ class Drone:
             con.occupied.remove(self)
             self.occupying.remove(con)
 
-    def reevaluate_drone_path(self, pathfinder: Pathfinder) -> None:
+    def reevaluate_drone_path(self) -> None:
 
         if isinstance(self.current_zone, Connection):
             return
 
         self.free_connections()
 
-        possible_paths: list[Path] = pathfinder.calculate_paths(
+        possible_paths: list[Path] = PathFinder.calculate_paths(
             self.current_zone,
             [],
             0,
-            pathfinder.map.end_hub,
+            self.goal,
             []
         )
 
@@ -191,10 +191,9 @@ class Drone:
 
 class DroneMonitor:
 
-    def __init__(self, drone_map: Map, pathfinder: Pathfinder) -> None:
+    def __init__(self, drone_map: Map) -> None:
 
         self.drone_map: Map = drone_map
-        self.pathfinder: Pathfinder = pathfinder
         self.drones: list[Drone] = []
         self.drones_delivered: list[Drone] = []
         self.turns: int = 0
@@ -218,7 +217,7 @@ class DroneMonitor:
 
         for drone in self.drones:
 
-            drone.reevaluate_drone_path(self.pathfinder)
+            drone.reevaluate_drone_path()
             drone.turns += 1
 
         moving_drones: list[Drone] = []
