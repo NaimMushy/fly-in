@@ -4,6 +4,15 @@ from rich.text import Text
 from rich.console import Console
 
 
+class Char:
+
+    def __init__(self, char: str, style: str, zone_or_connection: str) -> None:
+
+        self.char: str = char
+        self.style: str = style
+        self.relation: str = zone_or_connection
+
+
 class State:
 
     def __init__(self, info_mode: int, console: Console) -> None:
@@ -15,12 +24,17 @@ class State:
         self.drones_delivered: list[int] = []
         self.info_mode: int = info_mode
         self.console: Console = console
+        self.display_map: list[list[Char]] = []
 
     def display_info(self) -> None:
 
         print("\n\n")
-        for line_piece in self.dis:
-            self.console.print(line_piece, end="")
+        for line in self.display_map:
+            for char in line:
+                if char.style:
+                    self.console.print(Text(char.char, style=char.style), end="")
+                else:
+                    print(char.char, end="")
         time.sleep(0.1)
         if not self.drone_moves:
             return

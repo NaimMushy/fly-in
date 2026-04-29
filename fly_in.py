@@ -43,12 +43,12 @@ if __name__ == "__main__":
                     )
                     tui_display: TuiDisplay = TuiDisplay(drone_map, info_mode)
                     new_state: State = State(info_mode, tui_display.console)
-                    tui_display.display_map(new_state)
+                    new_state.display_map = tui_display.map_updated()
                     states: list[State] = [new_state]
                     while drone_monitor.drones:
                         new_state = State(info_mode, tui_display.console)
                         drone_monitor.update_drones(new_state)
-                        tui_display.display_map(new_state)
+                        new_state.display_map = tui_display.map_updated()
                         states.append(new_state)
                     cur_state: int = 0
                     tui_display.display_state(states[cur_state])

@@ -1,12 +1,11 @@
 import time
 import pyfiglet
 from rich import print
-from rich.text import Text
 from rich.console import Console
 from .zones import Zone  # Connection
 from .map_data import Map
 from .drones import DroneMonitor, Drone
-from .state import State
+from .state import State, Char
 
 
 class DisplayZone:
@@ -36,6 +35,7 @@ class DisplayZone:
         self.characters: dict[str, str] = characters
         self.console: Console = console
         self.parents: list["DisplayZone"] = []
+        self.col: int = 0
 
     def update_drones(self) -> None:
 
@@ -54,64 +54,85 @@ class DisplayZone:
                 line += 1
                 space_left = self.size * 2 - 2
 
-    def print_space(self, length: int) -> str:
+    def add_space(self, length: int) -> list[Char]:
 
-        return f"{self.characters['space'] * length}"
+        return [Char(" ", "", "") for _ in range(length)]
 
-    def print_style(self, char: str, length: int) -> Text:
+    def add_styled(self, char: str, length: int) -> list[Char]:
 
-        return Text(
-            f"{self.characters[char] * length}",
-            style=self.zone.color
-        )
+        return [Char(char, self.zone.color, self.zone.name) for _ in range(length)]
 
-    def print_line(self, line: int, state: State) -> None:
+    def add_drones(self, line: int, cur_line: list[Char]) -> None:
+
+        if 1 + self.info_mode > line or line >= self.height + self.info_mode - 1:
+            return
+        col: int = self.col + 1
+        space_left: int = self.size * 2 - 2
+        for drone in self.drones[line]:
+            cur_line[col] = Char(self.characters["drone"], self.zone.color, "")
+            col += 1
+            space_left -= 1
+            for c in range(len(str(drone.id))):
+                cur_line[col] = Char(str(drone.id)[c], self.zone.color, "")
+                col += 1
+                space_left -= 1
+        for _ in range(space_left):
+            cur_line[col] = Char(" ", "", self.zone.name)
+            col += 1
+
+    def add_to_line(self, line: int, cur_line: list[Char]) -> None:
+
+        self.col = len(cur_line)
+        if (self.info_mode and self.tltf <= -2) or self.nltf < -2:
+            self.col += (self.width - (self.size * 2)) // 2
 
         if line > self.height + self.info_mode:
-            state.dis.append(self.print_space(self.width))
+            cur_line += self.add_space(self.width)
             return
         if line == self.height + self.info_mode:
             if self.nltf > 0:
-                state.dis.append(self.print_space(self.nltf // 2))
-            state.dis.append(Text(self.name, style=self.zone.color))
+                cur_line += self.add_space(self.nltf // 2)
+            for c in self.zone.name:
+                cur_line.append(Char(c, self.zone.color, self.zone.name))
             if self.nltf > 0:
-                state.dis.append(self.print_space(self.nltf // 2 + self.nltf % 2))
+                cur_line += self.add_space(self.nltf // 2 + self.nltf % 2)
             return
         if self.info_mode and line == 0:
             if self.tltf > 0:
-                state.dis.append(self.print_space(self.tltf // 2))
-            state.dis.append(Text(self.zone.zone_type.upper(), style=self.zone.color))
+                cur_line += self.add_space(self.tltf // 2)
+            for c in self.zone.zone_type.upper():
+                cur_line.append(Char(c, self.zone.color, self.zone.name))
             if self.tltf > 0:
-                state.dis.append(self.print_space(self.tltf // 2 + self.tltf % 2))
+                cur_line += self.add_space(self.tltf // 2 + self.tltf % 2)
             return
-        self.update_drones()
+        # self.update_drones()
         if self.info_mode and self.tltf < 0:
-            state.dis.append(self.print_space((-self.tltf) // 2))
+            cur_line += self.add_space((-self.tltf) // 2)
         elif self.nltf < 0:
-            state.dis.append(self.print_space((-self.nltf) // 2))
+            cur_line += self.add_space((-self.nltf) // 2)
         if line == self.info_mode or line == self.height - 1 + self.info_mode:
             if line == self.info_mode:
                 cor: str = "u"
             else:
                 cor = "l"
-            state.dis.append(self.print_style((cor + "lcor"), 1))
-            state.dis.append(self.print_style("hor", self.size * 2 - 2))
-            state.dis.append(self.print_style((cor + "rcor"), 1))
+            cur_line.append(Char(self.characters[cor + "lcor"], self.zone.color, self.zone.name))
+            cur_line += self.add_styled(self.characters["hor"], self.size * 2 - 2)
+            cur_line.append(Char(self.characters[cor + "rcor"], self.zone.color, self.zone.name))
         else:
-            state.dis.append(self.print_style("ver", 1))
+            cur_line.append(Char(self.characters["ver"], self.zone.color, self.zone.name))
             space_left = self.size * 2 - 2
-            for drone in self.drones[line]:
-                state.dis.append(Text(
-                    f"{self.characters['drone']}{drone.id}",
-                    style=self.zone.color
-                ))
-                space_left -= 1 + len(str(drone.id))
-            state.dis.append(self.print_space(space_left))
-            state.dis.append(self.print_style("ver", 1))
+#             for drone in self.drones[line]:
+#                 state.dis.append(Text(
+#                     f"{self.characters['drone']}{drone.id}",
+#                     style=self.zone.color
+#                 ))
+#                 space_left -= 1 + len(str(drone.id))
+            cur_line += self.add_space(space_left)
+            cur_line.append(Char(self.characters["ver"], self.zone.color, self.zone.name))
         if self.info_mode and self.tltf < 0:
-            state.dis.append(self.print_space((-self.tltf) // 2 + (-self.tltf) % 2))
+            cur_line += self.add_space((-self.tltf) // 2 + (-self.tltf) % 2)
         elif self.nltf < 0:
-            state.dis.append(self.print_space((-self.nltf) // 2 + (-self.nltf) % 2))
+            cur_line += self.add_space((-self.nltf) // 2 + (-self.nltf) % 2)
 
 
 class Row:
@@ -120,6 +141,7 @@ class Row:
 
         self.id: int = row_id
         self.zones: list[DisplayZone] = []
+        self.lines: list[list[Char]] = []
         self.height: int = 0
         self.width: int = -pad
         self.padding: int = pad
@@ -131,6 +153,31 @@ class Row:
         if z.height > self.height:
             self.height = z.height
         z.row_id = self.id
+
+    def fill_lines(self, max_row_len: int) -> None:
+
+        row_pad: int = max_row_len - self.width
+        for line in range(self.height + 2):
+            cur_line: list[Char] = []
+            if row_pad >= 0:
+                cur_line += [Char(" ", "", "") for _ in range((row_pad // 2 + row_pad % 2))]
+            for zone in self.zones:
+                zone.add_to_line(line, cur_line)
+                if zone != self.zones[-1]:
+                    cur_line += [Char(" ", "", "") for _ in range(10)]
+            if row_pad >= 0:
+                cur_line += [Char(" ", "", "") for _ in range((row_pad // 2 + row_pad % 2))]
+            cur_line.append(Char("\n", "", ""))
+            self.lines.append(cur_line)
+
+    def update_drones(self) -> None:
+
+        for zone in self.zones:
+            zone.update_drones()
+
+        for line in range(len(self.lines)):
+            for zone in self.zones:
+                zone.add_drones(line, self.lines[line])
 
 
 class TuiDisplay:
@@ -158,10 +205,18 @@ class TuiDisplay:
         self.info_mode: int = info_mode
         self.create_rows()
 
-    def display_map(self, state: State) -> None:
+    def map_updated(self) -> list[list[Char]]:
 
+        big_list: list[list[Char]] = []
         for row in self.rows:
-            self.print_row(row, state)
+            row.update_drones()
+            row_list: list[list[Char]] = [
+                [c for c in line]
+                for line in row.lines
+            ]
+            big_list += row_list
+
+        return big_list
 
     @staticmethod
     def display_menu() -> None:
@@ -217,18 +272,6 @@ class TuiDisplay:
             print(f"     ➤ average number of turns per drone: {drone_monitor.avg}")
         time.sleep(0.1)
 
-    def print_row(self, row: Row, state: State) -> None:
-
-        row_pad: int = self.max_row_len - row.width
-        for line in range(row.height + 5 + self.info_mode):
-            state.dis.append(f"{' ' * (row_pad // 2)}")
-            for zone in row.zones:
-                zone.print_line(line, state)
-                if zone != row.zones[-1]:
-                    state.dis.append(f"{' ' * 10}")
-            state.dis.append(f"{' ' * (row_pad // 2 + row_pad % 2)}")
-            state.dis.append("\n")
-
     def in_a_row(self, z: DisplayZone) -> bool:
 
         for row in self.rows:
@@ -257,6 +300,9 @@ class TuiDisplay:
                     self.rows[cur_row + 1].add_new_zone(new_zone)
                     new_zone.parents.append(z)
             cur_row += 1
+
+        self.max_row_len = max(self.rows, key=lambda row: row.width).width
+
         for zone_id in range(len(self.map.hubs)):
             if not self.in_a_row(self.zones[self.map.hubs[zone_id].name]):
                 row_id: int = 0
@@ -265,4 +311,5 @@ class TuiDisplay:
                 self.rows[row_id].add_new_zone(
                     self.zones[self.map.hubs[zone_id].name]
                 )
-        self.max_row_len = max(self.rows, key=lambda row: row.width).width
+        for row in self.rows:
+            row.fill_lines(self.max_row_len)
