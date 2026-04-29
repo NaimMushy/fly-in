@@ -37,6 +37,75 @@ class DisplayZone:
         self.parents: list["DisplayZone"] = []
         self.col: int = 0
 
+    def add_row(self, row: int) -> None:
+
+        self.row: int = row
+
+    def trace_connections(self, lines: list[list[Char]]) -> None:
+
+        point: tuple[int, int] = (0, 0)
+        direction: tuple[int, int] = (0, 0)
+
+        for parent in self.parents:
+
+            path: list[tuple[int, int]] = []
+            if parent.col < self.col:
+                point = (self.row, self.col - 1)
+                direction = (0, -1)
+
+            elif parent.col > self.col + self.size * 2:
+                point = (self.row, self.col + self.size * 2 + 1)
+                direction = (0, 1)
+
+            elif parent.row < self.row:
+                point = (self.row - 1, self.col + (self.width // 2))
+                direction = (-1, 0)
+
+            elif parent.row > self.row + self.height + self.info_mode:
+                point = (self.row + self.height + self.info_mode, self.col + (self.width // 2))
+                direction = (1, 0)
+
+            path.append(point)
+
+            while lines[point[0] + direction[0]][point[1] + direction[1]].relation != parent.zone.name:
+
+                next_point: Char = lines[point[0] + direction[0]][point[1] + direction[1]]
+
+                if next_point.relation != "" and next_point.relation != parent.zone.name or (
+                    point[0] + direction[0] < 0 or point[0] + direction[0] >= len(lines) or
+                    point[1] + direction[1] < 0 or point[1] + direction[1] >= len(lines[point[0]])
+                ):
+                    if direction == (0, -1) or direction == (0, 1):
+                        if parent.row < point[0]:
+                            direction = (-1, 0)
+                        else:
+                            direction = (1, 0)
+                    elif direction == (-1, 0):
+                        if parent.col < point[1]:
+                            direction = (0, -1)
+                        else:
+                            direction = (0, 1)
+
+                elif parent.col <= point[1] + direction[1] <= parent.col + parent.width:
+                    if parent.row > self.row:
+                        direction = (1, 0)
+                    else:
+                        direction = (-1, 0)
+
+                elif parent.row == point[0] + direction[0]:
+                    if parent.col < self.col:
+                        direction = (0, -1)
+                    else:
+                        direction = (0, 1)
+
+                path.append(point)
+                point = (point[0] + direction[0], point[1] + direction[1])
+
+            path.append(point)
+
+            for p in path:
+                lines[p[0]][p[1]] = Char("c", self.zone.color, self.zone.connections[parent.zone.name].name)
+
     def update_drones(self) -> None:
 
         self.drones: dict[int, list[Drone]] = {
@@ -154,10 +223,10 @@ class Row:
             self.height = z.height
         z.row_id = self.id
 
-    def fill_lines(self, max_row_len: int) -> None:
+    def fill_lines(self, max_row_len: int, all_lines: list[list[Char]]) -> None:
 
         row_pad: int = max_row_len - self.width
-        for line in range(self.height + 2):
+        for line in range(self.height + 5):
             cur_line: list[Char] = []
             if row_pad >= 0:
                 cur_line += [Char(" ", "", "") for _ in range((row_pad // 2 + row_pad % 2))]
@@ -165,10 +234,13 @@ class Row:
                 zone.add_to_line(line, cur_line)
                 if zone != self.zones[-1]:
                     cur_line += [Char(" ", "", "") for _ in range(10)]
+                if not hasattr(zone, "row"):
+                    zone.add_row(len(all_lines))
             if row_pad >= 0:
                 cur_line += [Char(" ", "", "") for _ in range((row_pad // 2 + row_pad % 2))]
             cur_line.append(Char("\n", "", ""))
             self.lines.append(cur_line)
+            all_lines.append(cur_line)
 
     def update_drones(self) -> None:
 
@@ -295,10 +367,10 @@ class TuiDisplay:
                     new_zone = self.zones[connection.zone2.name]
                     if z == new_zone:
                         continue
+                    new_zone.parents.append(z)
                     if self.in_a_row(new_zone):
                         continue
                     self.rows[cur_row + 1].add_new_zone(new_zone)
-                    new_zone.parents.append(z)
             cur_row += 1
 
         self.max_row_len = max(self.rows, key=lambda row: row.width).width
@@ -311,5 +383,10 @@ class TuiDisplay:
                 self.rows[row_id].add_new_zone(
                     self.zones[self.map.hubs[zone_id].name]
                 )
+        self.lines: list[list[Char]] = []
+
         for row in self.rows:
-            row.fill_lines(self.max_row_len)
+            row.fill_lines(self.max_row_len, self.lines)
+
+#         for zone in self.zones.values():
+#             zone.trace_connections(self.lines)
