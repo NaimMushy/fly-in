@@ -184,7 +184,14 @@ class Map:
 
 class MapParser:
 
+    def __init__(self) -> None:
+
+        self.already_parsed: dict[str, Map] = {}
+
     def parse_map(self, filename: str) -> Map | None:
+
+        if filename in self.already_parsed.keys():
+            return self.already_parsed[filename]
 
         self.map: Map = Map()
         self.lines: dict[
@@ -286,6 +293,8 @@ class MapParser:
                 return None
 
             else:
+
+                self.already_parsed[filename] = self.map
 
                 return self.map
 

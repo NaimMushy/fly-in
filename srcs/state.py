@@ -6,7 +6,13 @@ from rich.console import Console
 
 class Char:
 
-    def __init__(self, char: str, style: str, zone_name: str, is_border: bool) -> None:
+    def __init__(
+        self,
+        char: str,
+        style: str,
+        zone_name: str,
+        is_border: bool
+    ) -> None:
 
         self.char: str = char
         self.style: str = style
@@ -16,7 +22,7 @@ class Char:
             self.is_zone = True
         self.is_border: bool = is_border
         self.connection_char: str = ""
-        self.connection_relation: str = ""
+
         self.parent: "Char"
         self.dist_from_start: int = 0
         self.dist_from_arrival: int = 0
@@ -29,9 +35,17 @@ class Char:
 
         return self.dist_from_start + self.dist_from_arrival
 
-    def update_dist(self, parent: "Char", in_to_explore: bool, goal: "Char") -> None:
+    def update_dist(
+        self,
+        parent: "Char",
+        in_to_explore: bool,
+        goal: "Char"
+    ) -> None:
 
-        new_dir: tuple[int, int] = (self.row - parent.row, self.col - parent.col)
+        new_dir: tuple[int, int] = (
+            self.row - parent.row,
+            self.col - parent.col
+        )
         goal_dir: tuple[int, int] = (
             0 if self.row == goal.row else (1 if goal.row > self.row else -1),
             0 if self.col == goal.col else (1 if goal.col > self.col else -1)
@@ -45,9 +59,15 @@ class Char:
         if new_dir != goal_dir:
             alignment_penalty = 1
 
-        new_dist: int = parent.dist_from_start + 1 + turn_penalty + alignment_penalty
+        new_dist: int = (
+            parent.dist_from_start
+            + 1
+            + turn_penalty
+            + alignment_penalty
+        )
 
         if not in_to_explore or new_dist < self.dist_from_start:
+
             self.dist_from_start = new_dist
             self.parent = parent
             self.dir_from_parent = new_dir
@@ -69,35 +89,63 @@ class State:
     def display_info(self) -> None:
 
         print("\n\n")
+
         for line in self.display_map:
+
             for char in line:
+
                 char_to_print: str = char.char
+
                 if char.connection_char:
                     char_to_print = char.connection_char
+
                 if char.style:
-                    self.console.print(Text(char_to_print, style=char.style), end="")
+                    self.console.print(Text(
+                        char_to_print,
+                        style=char.style
+                    ), end="")
+
                 else:
                     print(char_to_print, end="")
+
         time.sleep(0.1)
+
         if not self.drone_moves:
             return
+
         print("\n==== DRONE MOVEMENTS ====\n")
+
         print(f" ➤ {self.drone_moves}")
+
         if self.info_mode != 0:
+
             print("\n==== ADDITIONAL INFORMATION ====\n")
+
             print(f" ➤ number of drones that moved: {self.nb_drone_moved}\n")
+
             print(" ➤ zones currently occupied:\n")
+
             if len(self.zones_occupied) == 0:
                 print(" 0")
+
             for zone, occupying in self.zones_occupied.items():
+
                 print(f" {zone}:", end="")
+
                 for drone_id in occupying:
                     print(f" D{drone_id}", end="")
+
                 print("\n")
+
             print(" ➤ drones already delivered:", end="")
+
             if len(self.drones_delivered) == 0:
                 print(" 0", end="")
+
             for drone_id in self.drones_delivered:
+
                 print(f" D{drone_id}", end="")
+
             print("\n")
+
         time.sleep(0.1)
