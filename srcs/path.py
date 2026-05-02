@@ -127,7 +127,7 @@ class PathFinder:
         Parameters
         ----------
         lines : list[list[Char]]
-            The entire screen's grid.
+            The screen's grid containing all the points.
         to_explore : list[Char]
             The list of Char (points) to explore.
         explored : list[Char]

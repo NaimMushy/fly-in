@@ -73,11 +73,30 @@ CHARACTERS: dict[str, str] = {
 
 class DisplayZone:
 
+    """
+
+    A class that represents the display of a zone in the simulation.
+
+    """
+
     def __init__(
         self,
         z: Zone,
         info_mode: int = 0
     ) -> None:
+
+        """
+
+        Initializes the attributes of a DisplayZone object.
+
+        Parameters
+        ----------
+        z : Zone
+            The zone associated with the display zone.
+        info_mode : int
+            Indicates whether or not the information mode is activated.
+
+        """
 
         self.zone: Zone = z
         self.row_id: int = 0
@@ -95,26 +114,73 @@ class DisplayZone:
                 self.nltf = self.width - len(self.zone.name)
         self.parents: list["DisplayZone"] = []
 
-    def add_row(self, row: int, lines: list[list[Char]]) -> None:
+    def add_row(self, row: int) -> None:
+
+        """
+
+        Adds the attribute row
+        that associates the top border of the DisplayZone to a line of the grid.
+
+        Parameters
+        ----------
+        row : int
+            The row representing the top border of the zone.
+
+        """
 
         self.row: int = row
 
     def add_col(self, col: int, lines: list[list[Char]]) -> None:
 
+        """
+
+        Adds the attribute col
+        that associates the left border of the DisplayZone
+        to a column of the grid,
+        changing it depending on the information mode.
+
+        Parameters
+        ----------
+        col : int
+            The column representing the left border of the zone.
+        lines : list[list[Char]]
+            The screen's grid containing all the points.
+
+        """
+
         self.col: int = col
+
         if self.info_mode and hasattr(self, "row"):
+
             r: int = self.row + 1
             c: int = self.col
+
             if lines[r][c].is_border:
+
                 while lines[r][c - 1].is_border:
                     c -= 1
+
             else:
+
                 while not lines[r][c].is_border:
                     c += 1
+
             self.col = c
 
     @property
     def bounds(self) -> tuple[int, int, int, int]:
+
+        """
+
+        A property of the DisplayZone class
+        used to determine the bounds of the display zone.
+
+        Returns
+        -------
+        tuple[int, int, int, int]
+            Respectively the top, bottom, left and right bounds of the zone.
+
+        """
 
         if not hasattr(self, "row") or not hasattr(self, "col"):
             return 0, 0, 0, 0
@@ -132,6 +198,26 @@ class DisplayZone:
         lines: list[list[Char]]
     ) -> Char | None:
 
+        """
+
+        Chooses an entry point for the start of the connection
+        path between itself and another parent zone
+        based on the facade given.
+
+        Parameters
+        ----------
+        facade : str
+            The facade from which to choose an entry point
+            (either left, right, up or down).
+
+        Returns
+        -------
+        Char | None
+            The point of the grid selected to be the entry point
+            if one is available, otherwise None.
+
+        """
+
         options = DIRECTIONS[facade]
 
         if not options["valid"](self, lines):
@@ -148,22 +234,67 @@ class DisplayZone:
         return None
 
     def relative_position(self, parent: "DisplayZone") -> str:
+
+        """
+
+        Determines the relative position from itself to the parent zone.
+
+        Parameters
+        ----------
+        parent : DisplayZone
+            The parent zone to reach.
+
+        Returns
+        -------
+        str
+            Where the parent zone is located
+            looking from the child zone's point of view.
+
+        """
+
         t1, b1, l1, r1 = self.bounds
         t2, b2, l2, r2 = parent.bounds
 
         if b2 < t1:
             return "up"
+
         if t2 > b1:
             return "down"
+
         if r2 < l1:
             return "left"
+
         if l2 > r1:
             return "right"
+
         if t2 < t1:
             return "up"
+
         return "down"
 
     def choose_arrival(self, parent: "DisplayZone", side: str) -> str:
+
+        """
+
+        Determines the best side for the connection path
+        between the child zone and the parent zone
+        to arrive at.
+
+        Parameters
+        ----------
+        parent : DisplayZone
+            The parent zone to reach.
+        side : str
+            The side of the child zone from which
+            the connection path starts from.
+
+        Returns
+        -------
+        str
+            The best side for the connection path to end up at.
+
+        """
+
         t1, b1, l1, r1 = self.bounds
         t2, b2, l2, r2 = parent.bounds
 
@@ -193,6 +324,19 @@ class DisplayZone:
     @staticmethod
     def set_arrival_dist(lines: list[list[Char]], arrival: Char) -> None:
 
+        """
+
+        Resets the distance attributes of all the points in the grid.
+
+        Parameters
+        ----------
+        lines : list[list[Char]]
+            The screen's grid containing all the points.
+        arrival : Char
+            The point of arrival for the connection path.
+
+        """
+
         for line in range(len(lines)):
 
             for char in range(len(lines[line])):
@@ -211,6 +355,20 @@ class DisplayZone:
         lines: list[list[Char]],
         zones: dict[str, "DisplayZone"]
     ) -> None:
+
+        """
+
+        Traces a connection path between the zone
+        and each of its parents.
+
+        Parameters
+        ----------
+        lines : list[list[Char]]
+            The screen's grid containing all the points.
+        zones : dict[str, DisplayZone]
+            All of the display zones in the simulation.
+
+        """
 
         self.paths: dict[str, list[tuple[int, int]]] = {}
 
@@ -289,25 +447,45 @@ class DisplayZone:
 
     def update_drones(self, lines: list[list[Char]]) -> None:
 
+        """
+
+        Updates the drones that need to be displayed
+        based on the current occupancy of the Zone associated.
+
+        Parameters
+        ----------
+        lines : list[list[Char]]
+            The screen's grid containing all the points.
+
+        """
+
         if not hasattr(self, "drones"):
             self.drones: list[tuple[Drone, int, int]] = []
 
         for drone, row, col in self.drones:
+
             if drone not in self.zone.occupied:
+
                 self.drones.remove((drone, row, col))
+
                 lines[row][col].char = " "
                 lines[row][col].style = ""
+
                 for c in str(drone.id):
+
                     col += 1
                     lines[row][col].char = " "
                     lines[row][col].style = ""
 
         if len(self.drones) > 0:
+
             drone_r: int = self.drones[-1][1]
             drone_c: int = (
                 self.drones[-1][2] + 1 + len(str(self.drones[-1][0].id))
             )
+
         else:
+
             drone_r = self.row + self.info_mode + 1
             drone_c = self.col + 1
 
@@ -327,6 +505,18 @@ class DisplayZone:
         self.add_drones(lines)
 
     def update_con_drones(self, lines: list[list[Char]]) -> None:
+
+        """
+
+        Updates the drones in the connections between the zone
+        and other zones based on the connections' occupancy.
+
+        Parameters
+        ----------
+        lines : list[list[Char]]
+            The screen's grid containing all the points.
+
+        """
 
         if not hasattr(self, "con_drones"):
             self.con_drones: list[tuple[Drone, int, int, str]] = []
@@ -373,6 +563,18 @@ class DisplayZone:
 
     def add_drones(self, lines: list[list[Char]]) -> None:
 
+        """
+
+        Changes the points in the grid to display the drones
+        that occupy both the zone and the possible connections.
+
+        Parameters
+        ----------
+        lines : list[list[Char]]
+            The screen's grid containing all the points.
+
+        """
+
         for drone, row, col in self.drones:
 
             lines[row][col].char = CHARACTERS["drone"]
@@ -398,12 +600,46 @@ class DisplayZone:
     @staticmethod
     def add_space(length: int) -> list[Char]:
 
+        """
+
+        Creates a set of Char objects
+        that just display empty space.
+
+        Parameters
+        ----------
+        length : int
+            The number of spaces required.
+
+        Returns
+        -------
+        list[Char]
+            The correct amount of spaces created.
+
+        """
+
         return [
             Char(" ", "", "", False)
             for _ in range(length)
         ]
 
     def add_styled(self, char: str, length: int) -> list[Char]:
+
+        """
+
+        Creates a set of Char objects
+        that display certain characters with style added.
+
+        Parameters
+        ----------
+        length : int
+            The number of styled characters required.
+
+        Returns
+        -------
+        list[Char]
+            The correct amount of styled characters created.
+
+        """
 
         return [
             Char(char, self.zone.color, self.zone.name, True)
@@ -417,14 +653,48 @@ class DisplayZone:
         padding: int
     ) -> None:
 
+        """
+
+        Adds a zone title to the current line being constructed
+        with the correct padding before and after if required.
+
+        Parameters
+        ----------
+        cur_line : list[Char]
+            The current line of the grid being formed.
+        title : str
+            The title to add to the line.
+        padding : str
+            The type of the padding
+            (either nltf = name_letters_to_fit or tltf = title_letters_to_fit)
+
+        """
+
         if padding > 0:
             cur_line += self.add_space(padding // 2)
+
         for c in title:
             cur_line.append(Char(c, self.zone.color, self.zone.name, False))
+
         if padding > 0:
             cur_line += self.add_space(padding // 2 + padding % 2)
 
     def add_to_line(self, line: int, cur_line: list[Char]) -> None:
+
+        """
+
+        Adds the characters to the current line
+        needed to display the zone (titles, borders, spacing...).
+
+        Parameters
+        ----------
+        line : int
+            The index of the line in the grid.
+        cur_line: list[Char]
+            The line of the grid being formed
+            to which the characters are being added.
+
+        """
 
         if line > self.height + self.info_mode:
             cur_line += self.add_space(self.width)
@@ -486,7 +756,26 @@ class DisplayZone:
 
 class Row:
 
+    """
+
+    A class representing a row in the screen's grid.
+
+    """
+
     def __init__(self, row_id: int, pad: int) -> None:
+
+        """
+
+        Initializes the attributes of a Row object.
+
+        Parameters
+        ----------
+        row_id : int
+            The identifiant of the row indicating its position in the grid.
+        pad : int
+            The amount of padding to add between zones.
+
+        """
 
         self.id: int = row_id
         self.zones: list[DisplayZone] = []
@@ -497,6 +786,18 @@ class Row:
 
     def add_new_zone(self, z: DisplayZone) -> None:
 
+        """
+
+        Adds a new zone to the list of display zone,
+        updating the width and height of the row.
+
+        Parameters
+        ----------
+        z : DisplayZone
+            The new zone to add.
+
+        """
+
         self.zones.append(z)
         self.width += z.width + self.padding
         if z.height > self.height:
@@ -504,6 +805,14 @@ class Row:
         z.row_id = self.id
 
     def fill_lines(self) -> None:
+
+        """
+
+        Fills the lines forming the row,
+        adding to each one the characters
+        of the zones that need to appear on the specific line.
+
+        """
 
         for line in range(self.height + 5):
 
@@ -521,7 +830,27 @@ class Row:
 
 class TuiDisplay:
 
+    """
+
+    A class used to display a drone simulation
+    with zones and connections in the terminal.
+
+    """
+
     def __init__(self, drone_map: Map, info_mode: int) -> None:
+
+        """
+
+        Initializes the attributes of the TuiDisplay object.
+
+        Parameters
+        ----------
+        drone_map : map
+            The simulation map containing the hubs and connections.
+        info_mode : int
+            Indicates whether or not the information mode is activated.
+
+        """
 
         self.map: Map = drone_map
         self.console: Console = Console()
@@ -535,8 +864,21 @@ class TuiDisplay:
 
     def map_updated(self) -> list[list[Char]]:
 
+        """
+
+        Updates the map display to reflect the drones' positions.
+
+        Returns
+        -------
+        list[list[Char]]
+            A copy of the updated display map.
+
+        """
+
         for row in self.rows:
+
             for zone in row.zones:
+
                 zone.update_drones(self.lines)
 
         copycat: list[list[Char]] = []
@@ -560,6 +902,13 @@ class TuiDisplay:
 
     @staticmethod
     def display_menu() -> None:
+
+        """
+
+        Displays the menu of the project
+        with a custom title and ascii art.
+
+        """
 
         print(pyfiglet.figlet_format(
             CHARACTERS["menu_title"],
@@ -591,6 +940,19 @@ class TuiDisplay:
     @staticmethod
     def display_options(info_mode: int, map_file: str) -> None:
 
+        """
+
+        Displays the menu options for the user.
+
+        Parameters
+        ----------
+        info_mode : int
+            Indicates whether or not the information mode is activated.
+        map_file : str
+            The path to the file currently being selected for the map data.
+
+        """
+
         print("\n✦ MENU OPTIONS ✦\n")
         print(f"     ➤ s: SELECT NEW MAP (current map: {map_file})")
         print("     ➤ l: LAUNCH THE DRONES")
@@ -604,7 +966,20 @@ class TuiDisplay:
     @staticmethod
     def display_state(state: State) -> None:
 
+        """
+
+        Displays a given state of the simulation
+        and the options for the user.
+
+        Parameters
+        ----------
+        state : State
+            The current state of the simulation to display.
+
+        """
+
         state.display_info()
+
         print("\n✦ SIMULATION OPTIONS ✦\n")
         print("     ➤ n: NEXT STEP")
         print("     ➤ p: PREVIOUS STEP")
@@ -613,6 +988,22 @@ class TuiDisplay:
 
     @staticmethod
     def display_end(info_mode: int, turns: int, avg: int) -> None:
+
+        """
+
+        Displays an end message for the simulation
+        and some summary information.
+
+        Parameters
+        ----------
+        info_mode : int
+            Indicates whether or not the information mode is activated.
+        turns : int
+            The number of turns made during the simulation.
+        avg : int
+            The average number of turns per drone.
+
+        """
 
         print("\n✦ ✦ ✦ ✦ END OF THE SIMULATION ✦ ✦ ✦ ✦\n")
         print(f"     ➤ number of turns: {turns}")
@@ -624,6 +1015,23 @@ class TuiDisplay:
 
     def in_a_row(self, z: DisplayZone) -> bool:
 
+        """
+
+        Determines whether or not the display zone given
+        is already in a row.
+
+        Parameters
+        ----------
+        z : DisplayZone
+            The display zone to look for.
+
+        Returns
+        -------
+        bool
+            A boolean indicating whether or not the zone was found in a row.
+
+        """
+
         for row in self.rows:
 
             if z in row.zones:
@@ -632,6 +1040,13 @@ class TuiDisplay:
         return False
 
     def create_rows(self) -> None:
+
+        """
+
+        Creates all the rows needed for the simulation display
+        and assigns display zones to them based on hierarchy.
+
+        """
 
         self.rows: list[Row] = [Row(0, self.padding)]
         cur_row: int = 0
@@ -668,6 +1083,14 @@ class TuiDisplay:
 
     def add_missing_zones(self) -> None:
 
+        """
+
+        Adds the zones that are not part of a row
+        into an existing row, based on the hub closest to them
+        in the drone map.
+
+        """
+
         for zone_id in range(len(self.map.hubs)):
 
             if not self.in_a_row(self.zones[self.map.hubs[zone_id].name]):
@@ -682,6 +1105,13 @@ class TuiDisplay:
                 )
 
     def create_lines(self) -> None:
+
+        """
+
+        Creates the screen's grid by combining all of the rows' lines,
+        adding padding before and after to make the rows' lengths equal.
+
+        """
 
         self.lines: list[list[Char]] = []
 
