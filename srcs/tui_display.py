@@ -5,7 +5,7 @@ from rich.console import Console
 from typing import Callable
 from .zones import Zone  # Connection
 from .map_data import Map
-from .drones import DroneMonitor, Drone
+from .drones import Drone
 from .path import PathFinder
 from .state import State, Char
 

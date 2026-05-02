@@ -5,6 +5,12 @@ from typing_extensions import Self as self
 
 class Connection(BaseModel):
 
+    """
+
+    A class representing a connection between two zones.
+
+    """
+
     name: str
     zone1: "Zone"
     zone2: "Zone"
@@ -14,6 +20,12 @@ class Connection(BaseModel):
 
     @model_validator(mode="after")
     def validate_zones(self) -> self:
+
+        """
+
+        A validator used to verify the two zones given for the connection.
+
+        """
 
         if self.zone1 is None or self.zone2 is None:
 
@@ -31,8 +43,22 @@ class Connection(BaseModel):
 
     def free_spaces(self) -> int:
 
+        """
+
+        Calculates how many drones will be able to go through the connection
+        at the following turn.
+
+        Returns
+        -------
+        int
+            The number of drones able to pass through
+            the connection at the next turn.
+
+        """
+
         if not self.occupied:
             return 0
+
         return len([
             drone for drone in self.occupied
             if drone.is_next_step_accessible(drone.path_to_follow)
@@ -40,16 +66,53 @@ class Connection(BaseModel):
 
     def calculate_wait_cost(self, drone_id: int) -> int:
 
+        """
+
+        Calculates the added cost of waiting for the drone given
+        that wishes to go through this connection.
+
+        Parameters
+        ----------
+        drone_id : int
+            The identifiant of the drone wishing to pass through.
+
+        Returns
+        -------
+        int
+            The waiting cost for the drone.
+
+        """
+
         cost: int = 1
+
         for drone_wish in self.wish_to_occupy:
+
             if drone_wish.id == drone_id:
                 break
             cost += 1
+
         return abs(
             cost - (self.max_link_capacity - len(self.occupied))
         ) - self.free_spaces()
 
     def is_accessible(self, drone_id: int) -> bool:
+
+        """
+
+        Determines whether or not the connection is accesssible
+        for the drone given.
+
+        Parameters
+        ----------
+        drone_id : int
+            The identifiant of the drone wishing to go through.
+
+        Returns
+        -------
+        bool
+            True if the connection is accessible, False otherwise.
+
+        """
 
         space_remaining: int = self.max_link_capacity - len(self.occupied)
 
@@ -64,6 +127,12 @@ class Connection(BaseModel):
 
 class Zone(BaseModel):
 
+    """
+
+    A class representing a zone of the simulation.
+
+    """
+
     name: str
     x: int
     y: int
@@ -77,6 +146,12 @@ class Zone(BaseModel):
     @model_validator(mode="after")
     def validate_name(self) -> self:
 
+        """
+
+        A validator that verifies if the name given for the zone is valid.
+
+        """
+
         if " " in self.name or "-" in self.name:
 
             raise ValueError(
@@ -88,6 +163,12 @@ class Zone(BaseModel):
 
     @model_validator(mode="after")
     def validate_zone_type(self) -> self:
+
+        """
+
+        A validator that verifies if the type given for the zone is valid.
+
+        """
 
         if self.zone_type not in [
             "normal",
@@ -107,6 +188,10 @@ class Zone(BaseModel):
     @model_validator(mode="after")
     def validate_color(self) -> self:
 
+        """
+
+        A validator that verifies if the color given for the zone is valid.
+        """
         if self.color and len(self.color.split(" ")) != 1:
 
             raise ValueError(
@@ -122,6 +207,20 @@ class Zone(BaseModel):
         neighbor: str
     ) -> None:
 
+        """
+
+        Verifies if the new connection is valid
+        and adds it to the zone's connections.
+
+        Parameters
+        ----------
+        new_connection : Connection
+            The connection to add.
+        neighbor : str
+            The name of the neighbor zone sharing the connection.
+
+        """
+
         if neighbor in self.connections.keys():
 
             raise ValueError(
@@ -132,23 +231,23 @@ class Zone(BaseModel):
 
         self.connections[neighbor] = new_connection
 
-    def display_zone_info(self) -> None:
-
-        print(
-            f"zone {self.name}: "
-            f"zone type {self.zone_type}, "
-            f"max drones {self.max_drones}, "
-            "connections", end=""
-        )
-        for con_name, con in self.connections.items():
-            print(f" {con_name}: first zone={self == con.zone1}", end="")
-
-        print("\n")
-
     def free_spaces(self) -> int:
+
+        """
+
+        Calculates how many drones will be able to occupy the zone
+        at the following turn.
+
+        Returns
+        -------
+        int
+            The number of drones able to occupy the zone at the next turn.
+
+        """
 
         if not self.occupied:
             return 0
+
         return len([
             drone for drone in self.occupied
             if drone.is_next_step_accessible(drone.path_to_follow)
@@ -156,16 +255,54 @@ class Zone(BaseModel):
 
     def calculate_wait_cost(self, drone_id: int) -> int:
 
+        """
+
+        Calculates the added cost of waiting for the drone given
+        that wishes to occupy this zone.
+
+        Parameters
+        ----------
+        drone_id : int
+            The identifiant of the drone wishing to occupy the zone.
+
+        Returns
+        -------
+        int
+            The waiting cost for the drone.
+
+        """
+
         cost: int = 1
+
         for drone_wish in self.wish_to_occupy:
+
             if drone_wish.id == drone_id:
                 break
+
             cost += 1
+
         return abs(
             cost - (self.max_drones - len(self.occupied))
         ) - self.free_spaces()
 
     def is_accessible(self, drone_id: int) -> bool:
+
+        """
+
+        Determines whether or not the zone is accesssible
+        for the drone given.
+
+        Parameters
+        ----------
+        drone_id : int
+            The identifiant of the drone wishing to occupy the zone.
+
+        Returns
+        -------
+        bool
+            True if the zone is accessible, False otherwise.
+
+        """
 
         space_remaining: int = self.max_drones - len(self.occupied)
 

@@ -4,23 +4,39 @@ from .state import Char
 
 class Path:
 
+    """
+
+    A class to store the path between two points.
+
+    """
+
     def __init__(self, path: list[Zone], cost: int) -> None:
+
+        """
+
+        Initializes the attributes of a Path object.
+
+        Parameters
+        ----------
+        path : list[Zone]
+            The path between two zones.
+        cost : int
+            The cost of the path in terms of movement.
+
+        """
 
         self.path: list[Zone] = path
         self.cost: int = cost
         self.priority: bool = False
 
-    def display_path(self) -> None:
-
-        print("path: ", end="")
-        for zone in self.path:
-
-            print(f"{zone.name} - ", end="")
-
-        print(f"cost={self.cost}")
-
 
 class PathFinder:
+
+    """
+
+    A class with a set of methods used to find paths between two points.
+
+    """
 
     @staticmethod
     def calculate_paths(
@@ -30,6 +46,32 @@ class PathFinder:
         dest: Zone,
         possible_paths: list[Path]
     ) -> list[Path]:
+
+        """
+
+        Calculates all the available paths
+        between a starting zone and a goal zone
+        using recursion and backtracking.
+
+        Parameters
+        ----------
+        current_hub : Zone
+            The zone the path is currently at.
+        current_path : list[Zone]
+            The current path being constructed.
+        cost : int
+            The accumulated cost of the current path.
+        dest : Zone
+            The goal point of the path.
+        possible_paths : list[Path]
+            The total list of paths found until now.
+
+        Returns
+        -------
+        list[Path]
+            All the paths found between the start point and the destination.
+
+        """
 
         if current_hub.zone_type == "blocked":
 
@@ -76,6 +118,32 @@ class PathFinder:
         parent_name: str,
         arrival: Char
     ) -> list[Char]:
+
+        """
+
+        Finds all the neighbors available and not yet visited
+        of the current point in the screen's grid.
+
+        Parameters
+        ----------
+        lines : list[list[Char]]
+            The entire screen's grid.
+        to_explore : list[Char]
+            The list of Char (points) to explore.
+        explored : list[Char]
+            The list of Char that have already been explored.
+        parent_name : str
+            The name of the parent Zone that needs to be reached.
+        arrival : Char
+            The arrival point calculated.
+
+        Returns
+        -------
+        list[Char]
+            The list of points to explore
+            to which the neighbors of the current point have been added.
+
+        """
 
         neighbors: list[Char] = []
 
@@ -126,6 +194,22 @@ class PathFinder:
     @staticmethod
     def find_next_point(to_explore: list[Char]) -> Char | None:
 
+        """
+
+        Finds the next point that needs to be explored
+        using the Manhattan distance as a criterion.
+
+        Parameters
+        to_explore : list[Char]
+            The list of Char (points) yet to be explored.
+
+        Returns
+        -------
+        Char | None:
+            The next point to explore if found, otherwise None.
+
+        """
+
         if not to_explore:
             return None
 
@@ -142,6 +226,24 @@ class PathFinder:
 
     @staticmethod
     def retrace_steps(arrival: Char, start: Char) -> list[tuple[int, int]]:
+
+        """
+
+        Retrace the steps taken to form a path of grid points.
+
+        Parameters
+        ----------
+        arrival : Char
+            The goal and last point of the path.
+        start : Char
+            The starting point to be reached as the path retraces the steps.
+
+        Returns
+        -------
+        list[tuple[int, int]]
+            A list of grid coordinates that form the path.
+
+        """
 
         point: Char = arrival
 

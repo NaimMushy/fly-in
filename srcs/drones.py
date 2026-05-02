@@ -7,11 +7,33 @@ import time
 
 class Drone:
 
+    """
+
+    A class representing a drone in the simulation.
+
+    """
+
     def __init__(
-        self, drone_id: int,
+        self,
+        drone_id: int,
         start_zone: Zone,
         end_hub: Zone
     ) -> None:
+
+        """
+
+        Initializes the attributes of a Drone object.
+
+        Parameters
+        ----------
+        drone_id : int
+            The identifiant of the drone.
+        start_zone : Zone
+            The zone in which the drone is at the beginning.
+        end_hub : Zone
+            The arrival zone of the simulation.
+
+        """
 
         self.id: int = drone_id
         self.current_zone: Zone | Connection = start_zone
@@ -21,6 +43,13 @@ class Drone:
         self.turns: int = 0
 
     def update_intent(self) -> None:
+
+        """
+
+        Updates the intent of the drone regarding the following turn,
+        where it wishes to go next.
+
+        """
 
         if self not in self.next_zone.wish_to_occupy:
             self.next_zone.wish_to_occupy.append(self)
@@ -36,6 +65,14 @@ class Drone:
             ].wish_to_occupy.append(self)
 
     def turn_action(self) -> None:
+
+        """
+
+        The action taken by the drone during the current turn.
+        If the next zone of the drone's path is accessible, it moves,
+        otherwise it stays put waiting.
+
+        """
 
         if self.is_next_step_accessible(self.path_to_follow):
 
@@ -82,6 +119,23 @@ class Drone:
 
     def is_next_step_accessible(self, path: Path) -> bool:
 
+        """
+
+        Determines whether or not the next step in the drone's path
+        is accessible.
+
+        Parameters
+        ----------
+        path : Path
+            The path followed by the drone.
+
+        Returns
+        -------
+        bool
+            True if the next step is accessible, False otherwise.
+
+        """
+
         if (
             isinstance(self.current_zone, Connection)
             or (
@@ -127,6 +181,13 @@ class Drone:
 
     def free_connections(self) -> None:
 
+        """
+
+        Removes the drone from the connections it occupied
+        while it was moving between zones.
+
+        """
+
         connections_occupied: list[Connection] = [
             zone for zone in self.occupying
             if isinstance(zone, Connection)
@@ -136,6 +197,12 @@ class Drone:
             self.occupying.remove(con)
 
     def reevaluate_drone_path(self) -> None:
+
+        """
+
+        Reevaluates the best path for the drone to follow.
+
+        """
 
         if isinstance(self.current_zone, Connection):
             return
@@ -191,7 +258,24 @@ class Drone:
 
 class DroneMonitor:
 
+    """
+
+    A class used to monitor all the drones in the simulation.
+
+    """
+
     def __init__(self, drone_map: Map) -> None:
+
+        """
+
+        Initializes the attributes of a DroneMonitor object.
+
+        Parameters
+        ----------
+        drone_map : Map
+            The map that contains all the hubs and connections.
+
+        """
 
         self.drone_map: Map = drone_map
         self.drones: list[Drone] = []
@@ -211,9 +295,38 @@ class DroneMonitor:
     @property
     def avg(self) -> int:
 
-        return sum(drone.turns for drone in self.drones_delivered) // self.drone_map.nb_drones
+        """
+
+        A property of the drone monitor
+        to calculate the average number of turns per drone.
+
+        Returns
+        -------
+        int
+            The average number of turns per drone calculated.
+
+        """
+
+        return (
+            sum(drone.turns for drone in self.drones_delivered)
+            // self.drone_map.nb_drones
+        )
 
     def update_drones(self, state: State) -> None:
+
+        """
+
+        Updates all the drones remaining in the simulation,
+        first reevaluating their paths, then making them act,
+        and then checking whether or not they arrived at destination.
+
+        Parameters
+        ----------
+        state : State
+            The current state of the simulation
+            that needs to be updated with the current simulation data.
+
+        """
 
         for drone in self.drones:
 
@@ -221,11 +334,14 @@ class DroneMonitor:
             drone.turns += 1
 
         moving_drones: list[Drone] = []
+
         for drone in self.drones:
 
             if drone not in moving_drones:
                 drone.turn_action()
+
                 if drone.current_zone == drone.goal:
+
                     for occupying in drone.occupying:
                         occupying.occupied.remove(drone)
                     moving_drones.append(drone)
@@ -239,21 +355,34 @@ class DroneMonitor:
         state.nb_drone_moved = len(moving_drones)
 
         for drone in self.drones:
+
             for occupied in drone.occupying:
-                if isinstance(occupied, Connection) and drone.next_zone.zone_type != "restricted" or occupied == drone.goal:
+
+                if (
+                    isinstance(occupied, Connection)
+                    and drone.next_zone.zone_type != "restricted"
+                    or occupied == drone.goal
+                ):
                     continue
+
                 if occupied.name not in state.zones_occupied.keys():
                     state.zones_occupied[occupied.name] = []
+
                 state.zones_occupied[occupied.name].append(drone.id)
 
         for drone in moving_drones:
+
             if drone != moving_drones[0]:
                 state.drone_moves += " "
+
             state.drone_moves += f"D{drone.id}-{drone.current_zone.name}"
+
             if drone.current_zone == drone.goal:
+
                 self.drones_delivered.append(drone)
                 self.drones.remove(drone)
 
         state.drones_delivered = [drone.id for drone in self.drones_delivered]
-        time.sleep(0.1)
         self.turns += 1
+
+        time.sleep(0.1)

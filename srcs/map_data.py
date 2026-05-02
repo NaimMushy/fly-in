@@ -8,7 +8,24 @@ from .zones import Zone, Connection
 
 class Map:
 
+    """
+
+    A class representing a drone Map with zones and connections.
+
+    """
+
     def validate_nb_drones(self, nb_drones: str) -> None:
+
+        """
+
+        Verifies and validates the number of drones given.
+
+        Parameters
+        ----------
+        nb_drones : str
+            A string giving the number of drones.
+
+        """
 
         if hasattr(self, "nb_drones"):
 
@@ -16,7 +33,7 @@ class Map:
                 "Number of drones already defined!"
             )
 
-        self.nb_drones = int(nb_drones)
+        self.nb_drones: int = int(nb_drones)
 
         if self.nb_drones < 1:
 
@@ -27,13 +44,24 @@ class Map:
 
     def validate_start_hub(self, start_hub: str) -> None:
 
+        """
+
+        Verifies and validates the start hub given.
+
+        Parameters
+        ----------
+        start_hub : str
+            The name of the starting hub of the simulation.
+
+        """
+
         if hasattr(self, "start_hub"):
 
             raise ValueError(
                 "Start hub is already defined"
             )
 
-        self.start_hub = self.add_hub(start_hub)
+        self.start_hub: Zone = self.add_hub(start_hub)
 
         if "max_drones" not in start_hub:
             self.start_hub.max_drones = self.nb_drones
@@ -51,13 +79,24 @@ class Map:
 
     def validate_end_hub(self, end_hub: str) -> None:
 
+        """
+
+        Verifies and validates the end hub given.
+
+        Parameters
+        ----------
+        end_hub : str
+            The name of the arrival hub of the simulation.
+
+        """
+
         if hasattr(self, "end_hub"):
 
             raise ValueError(
                 "End hub is already defined"
             )
 
-        self.end_hub = self.add_hub(end_hub)
+        self.end_hub: Zone = self.add_hub(end_hub)
 
         if self.end_hub.zone_type == "blocked":
             raise ValueError(
@@ -65,6 +104,18 @@ class Map:
             )
 
     def validate_connection(self, new_connection: str) -> None:
+
+        """
+
+        Verifies and validates the new connection
+        between two hubs given as parameter.
+
+        Parameters
+        ----------
+        new_connection : str
+            The name of the connection between two hubs of the map.
+
+        """
 
         if not hasattr(self, "hubs") or not self.hubs:
 
@@ -111,6 +162,22 @@ class Map:
 
     def find_hub(self, hub_name: str) -> Zone | None:
 
+        """
+
+        Finds a certain hub in the map given its name.
+
+        Parameters
+        ----------
+        hub_name : str
+            The name of the hub to find.
+
+        Returns
+        -------
+        Zone | None
+            The hub found if it exists, otherwise None.
+
+        """
+
         if hasattr(self, "hubs"):
 
             for hub in self.hubs:
@@ -124,6 +191,22 @@ class Map:
         return None
 
     def add_hub(self, new_hub: str) -> Zone:
+
+        """
+
+        Verifies and adds a new hub to the map if it passes the checks.
+
+        Parameters
+        ----------
+        new_hub : str
+            The name of the new hub to add to the map.
+
+        Returns
+        -------
+        Zone
+            The hub created.
+
+        """
 
         hub_params: list[str] = new_hub.split(" ")
 
@@ -184,11 +267,40 @@ class Map:
 
 class MapParser:
 
+    """
+
+    A class used to parse the map data given and create a new map.
+
+    """
+
     def __init__(self) -> None:
+
+        """
+
+        Initializes the attribute of a MapParser object.
+
+        """
 
         self.already_parsed: dict[str, Map] = {}
 
     def parse_map(self, filename: str) -> Map | None:
+
+        """
+
+        Parses the map data of the file provided
+        and creates a new map if it is valid.
+
+        Parameters
+        ----------
+        filename : str
+            The path to the file that contains the map data.
+
+        Returns
+        -------
+        Map | None
+            The new map created if the data is valid, otherwise None.
+
+        """
 
         if filename in self.already_parsed.keys():
             return self.already_parsed[filename]
@@ -300,6 +412,17 @@ class MapParser:
 
     def parse_line(self, line: str) -> None:
 
+        """
+
+        Parses one line of the file opened and verifies its format and content.
+
+        Parameters
+        ----------
+        line : str
+            The line to parse and validate.
+
+        """
+
         if not (match := re.match("([a-z_]+): (.+)", line, re.I)):
 
             raise ValueError(
@@ -321,6 +444,23 @@ class MapParser:
 
     @staticmethod
     def parse_hub_metadata(params: list[str]) -> tuple[str, str, int]:
+
+        """
+
+        Parses the metadata contained in the data given as parameters
+        and extracts it if it is valid.
+
+        Parameters
+        ----------
+        params : list[str]
+            The list of parameters of the hub after parsing the line.
+
+        Returns
+        -------
+        tuple[str, str, int]
+            The zone type, the color, and maximum number of drones of the hub.
+
+        """
 
         if len(params) < 3:
             raise ValueError(
@@ -411,6 +551,23 @@ class MapParser:
 
     @staticmethod
     def parse_con_metadata(con_params: list[str]) -> int:
+
+        """
+
+        Parses the connection metadata contained in the data given
+        and extracts it.
+
+        Parameters
+        ----------
+        con_params : list[str]
+            The connection parameters after the line was parsed.
+
+        Returns
+        -------
+            The maximum number of drones (drone capacity)
+            that can go through the connection at the same time.
+
+        """
 
         max_cap: int = 1
 

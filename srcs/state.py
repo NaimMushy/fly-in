@@ -6,6 +6,12 @@ from rich.console import Console
 
 class Char:
 
+    """
+
+    A class representing a character (a pixel) of the screen's grid.
+
+    """
+
     def __init__(
         self,
         char: str,
@@ -13,6 +19,24 @@ class Char:
         zone_name: str,
         is_border: bool
     ) -> None:
+
+        """
+
+        Initializes the attributes of a Char object.
+
+        Parameters
+        ----------
+        char : str
+            The character displayed on the screen.
+        style : str
+            The style (appearance) of the character.
+        zone_name: str
+            The name of the zone in which the Char is
+            (if not in a zone, the name is empty).
+        is_border: bool
+            A boolean indicating whether or not the Char is a border of a zone.
+
+        """
 
         self.char: str = char
         self.style: str = style
@@ -33,6 +57,18 @@ class Char:
     @property
     def total_dist(self) -> int:
 
+        """
+
+        A property of the Char class
+        to calculate the Manhattan distance of the Char.
+
+        Returns
+        -------
+        int
+            The Manhattan distance of the Char object
+            (distance from start point + distance from end point).
+
+        """
         return self.dist_from_start + self.dist_from_arrival
 
     def update_dist(
@@ -41,6 +77,21 @@ class Char:
         in_to_explore: bool,
         goal: "Char"
     ) -> None:
+
+        """
+
+        Updates the distance of the Char object.
+
+        Parameters
+        ----------
+        parent : Char
+            The parent of the Char (the one preceding it in the path).
+        in_to_explore : bool
+            A boolean indicating if the Char has to be explored.
+        goal: Char
+            The arrival point of the path.
+
+        """
 
         new_dir: tuple[int, int] = (
             self.row - parent.row,
@@ -75,18 +126,44 @@ class Char:
 
 class State:
 
+    """
+
+    A class representing a certain state during the simulation.
+
+    """
+
     def __init__(self, info_mode: int, console: Console) -> None:
 
-        self.dis: list[str | Text] = []
+        """
+
+        Initializes the attributes of a State object.
+
+        Parameters
+        ----------
+        info_mode : int
+            Indicates whether or not the information mode is activated
+            (1 if yes, 0 otherwise).
+        console: Console
+            A console object from rich to be able to print text with styles.
+
+        """
+
+        self.display_map: list[list[Char]] = []
         self.drone_moves: str = ""
         self.nb_drone_moved: int = 0
         self.zones_occupied: dict[str, list[int]] = {}
         self.drones_delivered: list[int] = []
         self.info_mode: int = info_mode
         self.console: Console = console
-        self.display_map: list[list[Char]] = []
 
     def display_info(self) -> None:
+
+        """
+
+        Displays the entire map
+        and the information about the current turn.
+
+        """
 
         print("\n\n")
 
