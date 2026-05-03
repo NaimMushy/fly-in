@@ -6,6 +6,34 @@ from pydantic import ValidationError
 from .zones import Zone, Connection
 
 
+class FormatError(Exception):
+
+    def __init__(self, msg: str) -> None:
+
+        self.msg: str = msg
+
+
+class MissingValueError(Exception):
+
+    def __init__(self, msg: str) -> None:
+
+        self.msg: str = msg
+
+
+class UndefinedError(Exception):
+
+    def __init__(self, msg: str) -> None:
+
+        self.msg: str = msg
+
+
+class RedefinedError(Exception):
+
+    def __init__(self, msg: str) -> None:
+
+        self.msg: str = msg
+
+
 class Map:
 
     """
@@ -25,11 +53,18 @@ class Map:
         nb_drones : str
             A string giving the number of drones.
 
+        Raises
+        ------
+        RedefinedError
+            If the attribute nb_drones has already been defined.
+        ValueError
+            If the value for nb_drones is inferior to 1.
+
         """
 
         if hasattr(self, "nb_drones"):
 
-            raise ValueError(
+            raise RedefinedError(
                 "Number of drones already defined!"
             )
 
@@ -53,11 +88,21 @@ class Map:
         start_hub : str
             The name of the starting hub of the simulation.
 
+        Raises
+        ------
+        RedefinedError
+            If the attribute start_hub has already been defined.
+        ValueError
+            If the value for the drone capacity
+            is inferior to the total number of drones.
+        ValueError
+            If the type of the starting hub is blocked.
+
         """
 
         if hasattr(self, "start_hub"):
 
-            raise ValueError(
+            raise RedefinedError(
                 "Start hub is already defined"
             )
 
@@ -88,11 +133,18 @@ class Map:
         end_hub : str
             The name of the arrival hub of the simulation.
 
+        Raises
+        ------
+        RedefinedError
+            If the attribute end_hub has already been defined.
+        ValueError
+            If the type of the ending hub is blocked.
+
         """
 
         if hasattr(self, "end_hub"):
 
-            raise ValueError(
+            raise RedefinedError(
                 "End hub is already defined"
             )
 
@@ -115,11 +167,22 @@ class Map:
         new_connection : str
             The name of the connection between two hubs of the map.
 
+        Raises
+        ------
+        UndefinedError
+            If no hubs have been defined yet.
+        MissingValueError
+            If the connection does not have parameters to define it.
+        FormatError
+            If the parameters' format does not correspond to the expected.
+        UndefinedError
+            If the hubs given are invalid (i.e. if one was not created).
+
         """
 
         if not hasattr(self, "hubs") or not self.hubs:
 
-            raise ValueError(
+            raise UndefinedError(
                 "No hubs have been defined, "
                 f"impossible to create connection '{new_connection}'"
             )
@@ -128,7 +191,7 @@ class Map:
 
         if not connection_params:
 
-            raise ValueError(
+            raise MissingValueError(
                 "No definition provided for a connection"
             )
 
@@ -137,7 +200,7 @@ class Map:
 
         if len(con_zones) != 2:
 
-            raise ValueError(
+            raise FormatError(
                 f"Invalid connection format '{connection_params[0]}'\n"
                 "Format must be '<zone1>-<zone2> [metadata](optional)'"
             )
@@ -145,10 +208,20 @@ class Map:
         fst_zone: Zone | None = self.find_hub(con_zones[0])
         scd_zone: Zone | None = self.find_hub(con_zones[1])
 
-        if not fst_zone or not scd_zone:
+        if not fst_zone:
 
-            raise ValueError(
-                f"Invalid hub(s) given for connection '{connection_params[0]}'"
+            raise UndefinedError(
+                f"Invalid hub {con_zones[0]} given "
+                f"for connection '{connection_params[0]}'"
+                "This hub has not yet been defined"
+            )
+
+        if not scd_zone:
+
+            raise UndefinedError(
+                f"Invalid hub {con_zones[1]} given "
+                f"for connection '{connection_params[0]}'"
+                "This hub has not yet been defined"
             )
 
         connection: Connection = Connection(
@@ -206,20 +279,29 @@ class Map:
         Zone
             The hub created.
 
+        Raises
+        ------
+        MissingValueError
+            If the zone does not have parameters to define it.
+        FormatError
+            If the parameters' format does not correspond to the expected.
+        ValueError
+            If a parameter given is the same as another hub's.
+
         """
 
         hub_params: list[str] = new_hub.split(" ")
 
         if len(hub_params) < 3:
 
-            raise ValueError(
+            raise MissingValueError(
                 f"Invalid zone definition '{new_hub}' for hub\n"
                 "Zone definition must contain at least a name and coordinates"
             )
 
         if len(hub_params) > 6:
 
-            raise ValueError(
+            raise FormatError(
                 f"Invalid zone definition '{new_hub}' for hub\n"
                 "Zone definition must not contain "
                 "more than a name, coordinates, "
@@ -300,6 +382,14 @@ class MapParser:
         Map | None
             The new map created if the data is valid, otherwise None.
 
+        Raises
+        ------
+        ValueError
+            If the first line of the map file
+            is not defining the number of drones.
+        MissingValueError
+            If there are missing key attributes not provided in the map file.
+
         """
 
         if filename in self.already_parsed.keys():
@@ -358,7 +448,7 @@ class MapParser:
                 return None
 
             print(
-                "Caught Parsing Error for line:\n"
+                f"Caught {err.__class__.__name__} for line:\n"
             )
 
             if isinstance(err, ValidationError):
@@ -383,25 +473,25 @@ class MapParser:
 
                 if not hasattr(self.map, "start_hub"):
 
-                    raise ValueError(
+                    raise MissingValueError(
                         "Missing start hub!"
                     )
 
                 if not hasattr(self.map, "end_hub"):
 
-                    raise ValueError(
+                    raise MissingValueError(
                         "Missing end hub!"
                     )
 
                 if not hasattr(self.map, "nb_drones"):
 
-                    raise ValueError(
+                    raise MissingValueError(
                         "Missing number of drones!"
                     )
 
-            except ValueError as ve:
+            except MissingValueError as mve:
 
-                print(f"Caught Parsing Error: {ve}")
+                print(f"Caught {mve.__class__.__name__}: {mve}")
                 return None
 
             else:
@@ -421,11 +511,18 @@ class MapParser:
         line : str
             The line to parse and validate.
 
+        Raises
+        ------
+        FormatError
+            If the line's format does not correspond to the expected.
+        ValueError
+            If the type of the parameter for the line is invalid.
+
         """
 
         if not (match := re.match("([a-z_]+): (.+)", line, re.I)):
 
-            raise ValueError(
+            raise FormatError(
                 f"Invalid format for line '{line}'\n"
                 "Format must be '<parameter>: <definition>'"
             )
@@ -460,10 +557,21 @@ class MapParser:
         tuple[str, str, int]
             The zone type, the color, and maximum number of drones of the hub.
 
+        Raises
+        ------
+        MissingValueError
+            If the key parameters defining the zone are not present.
+        FormatError
+            If the metadata's format does not correspond to the expected.
+        RedefinedError
+            If the parameter being defined has already been set.
+        ValueError
+            If the type of the parameter given as metadata is invalid.
+
         """
 
         if len(params) < 3:
-            raise ValueError(
+            raise MissingValueError(
                 "Missing definition parameters for the hub\n"
                 "Parameters required are the hub's name and coordinates"
             )
@@ -481,7 +589,7 @@ class MapParser:
 
         if not (params[3].startswith("[") and params[-1].endswith("]")):
 
-            raise ValueError(
+            raise FormatError(
                 f"Invalid metadata format in zone definition '{params}'\n"
                 "Metadata must be incased in brackets '[]'"
             )
@@ -493,7 +601,7 @@ class MapParser:
 
             if not (match := re.match("([a-z_]+)=(.+)", params[p], re.I)):
 
-                raise ValueError(
+                raise FormatError(
                     f"Invalid format for metadata '{params[p]}'\n"
                     "Metadata must be of '<parameter>=<value>' format"
                 )
@@ -502,7 +610,7 @@ class MapParser:
 
                 if zone_defined:
 
-                    raise ValueError(
+                    raise RedefinedError(
                         f"Invalid metadata '{params[p]}'\n"
                         "Zone type is already defined"
                     )
@@ -514,7 +622,7 @@ class MapParser:
 
                 if color_defined:
 
-                    raise ValueError(
+                    raise RedefinedError(
                         f"Invalid metadata '{params[p]}'\n"
                         "Color for the zone is already defined"
                     )
@@ -532,7 +640,7 @@ class MapParser:
 
                 if max_drones_defined:
 
-                    raise ValueError(
+                    raise RedefinedError(
                         f"Invalid metadata '{params[p]}'\n"
                         "Maximum drones for the zone is already defined"
                     )
@@ -567,13 +675,20 @@ class MapParser:
             The maximum number of drones (drone capacity)
             that can go through the connection at the same time.
 
+        Raises
+        ------
+        FormatError
+            If the metadata's format does not correspond to the expected.
+        ValueError
+            If the type of the parameter given as metadata is invalid.
+
         """
 
         max_cap: int = 1
 
         if len(con_params) > 2:
 
-            raise ValueError(
+            raise FormatError(
                 "Too many values given "
                 f"for connection definition '{con_params}'\n"
                 "Definition must contain the two connection zones "
@@ -587,7 +702,7 @@ class MapParser:
                 and con_params[1].endswith("]")
             ):
 
-                raise ValueError(
+                raise FormatError(
                     f"Invalid metadata format for '{con_params[1]}'\n"
                     "Metadata must always be incased in brackets '[]'"
                 )
