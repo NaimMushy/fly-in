@@ -2,7 +2,7 @@ import time
 import pyfiglet
 from rich import print
 from rich.console import Console
-from typing import Callable
+from typing import Callable, Generator
 from .zones import Zone
 from .map_data import Map
 from .drones import Drone
@@ -10,51 +10,55 @@ from .path import PathFinder
 from .state import State, Char
 
 
-DIRECTIONS: dict[str, dict[str, Callable]] = {
-    "up": {
-        "preferred": lambda self: (
-            self.bounds[0] - 1,
-            (self.bounds[2] + self.bounds[3]) // 2
-        ),
-        "edge_iter": lambda self: (
-            (self.bounds[0] - 1, c)
-            for c in range(self.bounds[2], self.bounds[3] + 1)
-        ),
-        "valid": lambda self, lines: self.bounds[0] - 1 >= 0
-    },
-    "down": {
-        "preferred": lambda self: (
-            self.bounds[1] + 1, (self.bounds[2] + self.bounds[3]) // 2
-        ),
-        "edge_iter": lambda self: (
-            (self.bounds[1] + 1, c)
-            for c in range(self.bounds[2], self.bounds[3] + 1)
-        ),
-        "valid": lambda self, lines: self.bounds[1] + 1 < len(lines)
-    },
-    "left": {
-        "preferred": lambda self: (
-            (self.bounds[0] + self.bounds[1]) // 2,
-            self.bounds[2] - 1
-        ),
-        "edge_iter": lambda self: (
-            (r, self.bounds[2] - 1)
-            for r in range(self.bounds[0], self.bounds[1] + 1)
-        ),
-        "valid": lambda self, lines: self.bounds[2] - 1 >= 0
-    },
-    "right": {
-        "preferred": lambda self: (
-            (self.bounds[0] + self.bounds[1]) // 2,
-            self.bounds[3] + 1
-        ),
-        "edge_iter": lambda self: (
-            (r, self.bounds[3] + 1)
-            for r in range(self.bounds[0], self.bounds[1] + 1)
-        ),
-        "valid": lambda self, lines: self.bounds[3] + 1 < len(lines[0])
-    }
+PREFERRED_DIR: dict[str, Callable[["DisplayZone"], tuple[int, int]]] = {
+    "up": lambda self: (
+        self.bounds[0] - 1,
+        (self.bounds[2] + self.bounds[3]) // 2
+    ),
+    "down": lambda self: (
+        self.bounds[1] + 1, (self.bounds[2] + self.bounds[3]) // 2
+    ),
+    "left": lambda self: (
+        (self.bounds[0] + self.bounds[1]) // 2,
+        self.bounds[2] - 1
+    ),
+    "right": lambda self: (
+        (self.bounds[0] + self.bounds[1]) // 2,
+        self.bounds[3] + 1
+    )
 }
+
+
+EDGE_DIR: dict[
+    str,
+    Callable[["DisplayZone"], Generator[tuple[int, int], None, None]]
+] = {
+    "up": lambda self: (
+        (self.bounds[0] - 1, c)
+        for c in range(self.bounds[2], self.bounds[3] + 1)
+    ),
+    "down": lambda self: (
+        (self.bounds[1] + 1, c)
+        for c in range(self.bounds[2], self.bounds[3] + 1)
+    ),
+    "left": lambda self: (
+        (r, self.bounds[2] - 1)
+        for r in range(self.bounds[0], self.bounds[1] + 1)
+    ),
+    "right": lambda self: (
+        (r, self.bounds[3] + 1)
+        for r in range(self.bounds[0], self.bounds[1] + 1)
+    )
+}
+
+
+VALID_DIR: dict[str, Callable[["DisplayZone", list[list[Char]]], bool]] = {
+    "up": lambda self, lines: self.bounds[0] - 1 >= 0,
+    "down": lambda self, lines: self.bounds[1] + 1 < len(lines),
+    "left": lambda self, lines: self.bounds[2] - 1 >= 0,
+    "right": lambda self, lines: self.bounds[3] + 1 < len(lines[0])
+}
+
 
 CHARACTERS: dict[str, str] = {
     "hor": "═",
@@ -277,16 +281,14 @@ class DisplayZone:
 
         """
 
-        options = DIRECTIONS[facade]
-
-        if not options["valid"](self, lines):
+        if not VALID_DIR[facade](self, lines):
             return None
 
-        pref = options["preferred"](self)
+        pref = PREFERRED_DIR[facade](self)
         if lines[pref[0]][pref[1]].relation == "":
             return lines[pref[0]][pref[1]]
 
-        for r, c in options["edge_iter"](self):
+        for r, c in EDGE_DIR[facade](self):
             if lines[r][c].relation == "":
                 return lines[r][c]
 
@@ -883,7 +885,7 @@ class Row:
 
         """
 
-        for line in range(self.height + 5):
+        for line in range(self.height + 5 + (len(self.zones) // 3)):
 
             cur_line: list[Char] = []
 
