@@ -3,7 +3,7 @@ import pyfiglet
 from rich import print
 from rich.console import Console
 from typing import Callable
-from .zones import Zone  # Connection
+from .zones import Zone
 from .map_data import Map
 from .drones import Drone
 from .path import PathFinder
@@ -67,8 +67,40 @@ CHARACTERS: dict[str, str] = {
     "drone": "■",
     "connection": "◇",
     "empty": "",
-    "title": "Welcome to Fly-In !!"
+    "menu_title": "Welcome to Fly-In !"
 }
+
+
+RAINBOW: list[str] = [
+    "red",
+    "dark_orange",
+    "gold1",
+    "spring_green1",
+    "dark_green",
+    "turquoise2",
+    "dark_blue",
+    "dark_purple"
+]
+
+
+RAINBOW_EXT: list[str] = [
+    "dark_red",
+    "red",
+    "red3",
+    "dark_orange3"
+    "orange3",
+    "gold3",
+    "yellow1",
+    "pale_green1",
+    "dark_sea_green4",
+    "dark_green",
+    "pale_turquoise1",
+    "sky_blue2"
+    "navy_blue",
+    "dark_magenta",
+    "purple4",
+    "hot_pink3"
+]
 
 
 class DisplayZone:
@@ -113,13 +145,20 @@ class DisplayZone:
                 self.width = len(self.zone.zone_type)
                 self.nltf = self.width - len(self.zone.name)
         self.parents: list["DisplayZone"] = []
+        if self.zone.color == "rainbow":
+            self.rainbow_index: int = -1
+            if self.size * 2 > 8:
+                self.rainbow: list[str] = RAINBOW_EXT
+            else:
+                self.rainbow = RAINBOW
 
     def add_row(self, row: int) -> None:
 
         """
 
         Adds the attribute row
-        that associates the top border of the DisplayZone to a line of the grid.
+        that associates the top border of the DisplayZone
+        to a line of the grid.
 
         Parameters
         ----------
@@ -166,6 +205,26 @@ class DisplayZone:
                     c += 1
 
             self.col = c
+
+    @property
+    def color(self) -> str:
+
+        """
+
+        A property of the DisplayZone class
+        used to get the proper color for the display characters.
+
+        Returns
+        -------
+        str
+            The color for the character's style.
+
+        """
+        if self.zone.color == "rainbow":
+            self.rainbow_index += 1
+            return self.rainbow[self.rainbow_index % len(self.rainbow)]
+
+        return self.zone.color
 
     @property
     def bounds(self) -> tuple[int, int, int, int]:
@@ -443,7 +502,7 @@ class DisplayZone:
             for r, c in path_found:
 
                 lines[r][c].connection_char = CHARACTERS["connection"]
-                lines[r][c].style = self.zone.color
+                lines[r][c].style = self.color
 
     def update_drones(self, lines: list[list[Char]]) -> None:
 
@@ -530,16 +589,18 @@ class DisplayZone:
 
                 self.con_drones.remove((con_drone, con_r, con_c, p_name))
 
-                lines[con_r][con_c].connection_char = "c"
-                lines[con_r][con_c].style = self.zone.color
+                lines[con_r][con_c].connection_char = CHARACTERS["connection"]
+                lines[con_r][con_c].style = self.color
 
                 for c in str(con_drone.id):
 
                     con_c += 1
 
                     if lines[con_r][con_c].connection_char:
-                        lines[con_r][con_c].connection_char = "c"
-                        lines[con_r][con_c].style = self.zone.color
+                        lines[con_r][con_c].connection_char = CHARACTERS[
+                            "connection"
+                        ]
+                        lines[con_r][con_c].style = self.color
                     else:
                         lines[con_r][con_c].char = " "
                         lines[con_r][con_c].style = ""
@@ -578,24 +639,24 @@ class DisplayZone:
         for drone, row, col in self.drones:
 
             lines[row][col].char = CHARACTERS["drone"]
-            lines[row][col].style = self.zone.color + " blink"
+            lines[row][col].style = self.color + " blink"
 
             for c in str(drone.id):
 
                 col += 1
                 lines[row][col].char = c
-                lines[row][col].style = self.zone.color + " blink"
+                lines[row][col].style = self.color + " blink"
 
         for con_drone, con_row, con_col, p_name in self.con_drones:
 
             lines[con_row][con_col].connection_char = CHARACTERS["drone"]
-            lines[con_row][con_col].style = self.zone.color + " blink"
+            lines[con_row][con_col].style = self.color + " blink"
 
             for con_c in str(con_drone.id):
 
                 con_col += 1
                 lines[con_row][con_col].char = con_c
-                lines[con_row][con_col].style = self.zone.color + " blink"
+                lines[con_row][con_col].style = self.color + " blink"
 
     @staticmethod
     def add_space(length: int) -> list[Char]:
@@ -642,7 +703,7 @@ class DisplayZone:
         """
 
         return [
-            Char(char, self.zone.color, self.zone.name, True)
+            Char(char, self.color, self.zone.name, True)
             for _ in range(length)
         ]
 
@@ -673,8 +734,14 @@ class DisplayZone:
         if padding > 0:
             cur_line += self.add_space(padding // 2)
 
-        for c in title:
-            cur_line.append(Char(c, self.zone.color, self.zone.name, False))
+        for c in range(len(title)):
+
+            cur_line.append(Char(
+                title[c],
+                self.color,
+                self.zone.name,
+                False
+            ))
 
         if padding > 0:
             cur_line += self.add_space(padding // 2 + padding % 2)
@@ -707,7 +774,7 @@ class DisplayZone:
 
         if self.info_mode and line == 0:
 
-            self.add_title(cur_line, self.zone.zone_type, self.tltf)
+            self.add_title(cur_line, self.zone.zone_type.upper(), self.tltf)
             return
 
         if self.info_mode and self.tltf < 0:
@@ -735,14 +802,16 @@ class DisplayZone:
 
         cur_line.append(Char(
             fst,
-            self.zone.color,
+            self.color,
             self.zone.name,
             True
         ))
+
         cur_line += self.add_styled(mid, self.size * 2 - 2)
+
         cur_line.append(Char(
             last,
-            self.zone.color,
+            self.color,
             self.zone.name,
             True
         ))
@@ -1144,15 +1213,21 @@ class TuiDisplay:
 
             for c in range(len(self.lines[r])):
 
-                if not hasattr(self.zones[self.lines[r][c].relation], "row"):
-                    self.zones[
-                        self.lines[r][c].relation
-                    ].add_row(r, self.lines)
+                if self.lines[r][c].is_zone:
 
-                if not hasattr(self.zones[self.lines[r][c].relation], "col"):
-                    self.zones[
-                        self.lines[r][c].relation
-                    ].add_col(c, self.lines)
+                    if not hasattr(
+                        self.zones[self.lines[r][c].relation], "row"
+                    ):
+                        self.zones[
+                            self.lines[r][c].relation
+                        ].add_row(r)
+
+                    if not hasattr(
+                        self.zones[self.lines[r][c].relation], "col"
+                    ):
+                        self.zones[
+                            self.lines[r][c].relation
+                        ].add_col(c, self.lines)
 
                 self.lines[r][c].row = r
                 self.lines[r][c].col = c

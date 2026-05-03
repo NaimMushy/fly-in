@@ -76,7 +76,7 @@ def launch_drones(
     drone_map: Map | None = map_parser.parse_map(map_file)
 
     if not drone_map:
-        print(f" ✘ Map {map_file} refused : Invalid data")
+        print(f" ✘ Map '{map_file}' refused : Invalid data")
         return
 
     elif map_file not in states.keys() and not PathFinder.calculate_paths(
@@ -86,17 +86,17 @@ def launch_drones(
         drone_map.end_hub,
         []
     ):
-        print(f" ✘ Map {map_file} refused : No paths found")
+        print(f" ✘ Map '{map_file}' refused : No paths found")
         return
 
     tui_display: TuiDisplay = TuiDisplay(drone_map, info_mode)
 
     if map_file not in states.keys():
 
-        print(f" ✔ Map {map_file} validated!\n")
+        print(f" ✔ Map '{map_file}' validated!\n")
 
     if map_file not in states.keys() or (
-        not any(lst_state[3] for lst_state in states.values())
+        info_mode and not any(lst_state[3] for lst_state in states[map_file])
     ):
         drone_monitor: DroneMonitor = DroneMonitor(
             drone_map,
@@ -112,6 +112,9 @@ def launch_drones(
             drone_monitor.update_drones(new_state)
             new_state.display_map = tui_display.map_updated()
             cur_states.append(new_state)
+
+        if map_file not in states.keys():
+            states[map_file] = []
 
         states[map_file].append((
             cur_states,
@@ -155,9 +158,11 @@ def show_states(
 
     tui_display.display_state(states[0][cur_state])
 
-    user_input = input()
+    user_input: str = ""
 
     while user_input != "m":
+
+        user_input = input()
 
         while user_input not in ["n", "p", "m"]:
             user_input = input()
@@ -166,6 +171,7 @@ def show_states(
 
             if cur_state == len(states[0]) - 1:
                 tui_display.display_end(states[3], states[1], states[2])
+                user_input = "m"
 
             else:
                 cur_state += 1

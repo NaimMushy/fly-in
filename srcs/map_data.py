@@ -406,7 +406,7 @@ class MapParser:
             "connection": ([], self.map.validate_connection)
         }
 
-        print(end=f"\nParsing {filename} ")
+        print(end=f"\nParsing '{filename}' ")
         for _ in range(3):
 
             for _ in range(3):
@@ -629,11 +629,21 @@ class MapParser:
 
                 try:
                     color_parsed: Color = Color.parse(match.group(2))
-                except ColorParseError:
-                    pass
-                else:
-                    color = color_parsed.name
 
+                except ColorParseError:
+
+                    try:
+                        color_parsed = Color.parse(match.group(2) + "1")
+
+                    except ColorParseError:
+
+                        if match.group(2) == "rainbow":
+                            color = match.group(2)
+
+                        color_defined = True
+                        continue
+
+                color = color_parsed.name
                 color_defined = True
 
             elif match.group(1) == "max_drones":
