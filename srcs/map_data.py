@@ -1,9 +1,9 @@
 import re
-import time
 from rich.color import Color, ColorParseError
 from typing import Callable
 from pydantic import ValidationError
 from .zones import Zone, Connection
+from .utils import animate_dots
 
 
 class FormatError(Exception):
@@ -410,19 +410,7 @@ class MapParser:
             "connection": ([], self.map.validate_connection)
         }
 
-        print(end=f"Parsing '{filename}' ")
-        for _ in range(3):
-
-            for _ in range(3):
-
-                print(end='.', flush=True)
-                time.sleep(0.5)
-
-            print(end='\b\b\b', flush=True)
-            print(end='   ', flush=True)
-            print(end='\b\b\b', flush=True)
-
-        print("\n")
+        animate_dots(f"Parsing '{filename}' ", 3)
 
         try:
 

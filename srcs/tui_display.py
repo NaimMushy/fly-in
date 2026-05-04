@@ -1000,12 +1000,18 @@ class TuiDisplay:
         return copycat
 
     @staticmethod
-    def display_menu() -> None:
+    def display_menu(info_mode: int, map_file: str) -> None:
 
         """
 
-        Displays the menu of the project
-        with a custom title and ascii art.
+        Displays the menu banner and options for the user.
+
+        Parameters
+        ----------
+        info_mode : int
+            Indicates whether or not the information mode is activated.
+        map_file : str
+            The path to the file currently being selected for the map data.
 
         """
 
@@ -1035,24 +1041,6 @@ class TuiDisplay:
               _.-'``                    ``'-._
             -'                                '-
         """)
-
-        time.sleep(3)
-
-    @staticmethod
-    def display_options(info_mode: int, map_file: str) -> None:
-
-        """
-
-        Displays the menu options for the user.
-
-        Parameters
-        ----------
-        info_mode : int
-            Indicates whether or not the information mode is activated.
-        map_file : str
-            The path to the file currently being selected for the map data.
-
-        """
 
         print("\n✦ MENU OPTIONS ✦\n")
         print(f"     ➤ s: SELECT NEW MAP (current map: {map_file})")

@@ -1,6 +1,9 @@
 import sys
 import os
-from srcs import MapParser, Map, PathFinder, DroneMonitor, TuiDisplay, State
+import time
+from srcs import (
+    MapParser, Map, PathFinder, DroneMonitor, TuiDisplay, State, animate_dots
+)
 
 
 DEFAULT_MAP: str = "tests/testmap.txt"
@@ -18,10 +21,6 @@ def main() -> None:
     map_parser: MapParser = MapParser()
     states: dict[str, list[tuple[list[State], int, int, int]]] = {}
 
-    os.system('clear')
-    TuiDisplay.display_menu()
-    os.system('clear')
-
     if len(sys.argv) == 2:
         map_file = sys.argv[1]
     else:
@@ -35,13 +34,15 @@ def main() -> None:
 
         try:
 
-            TuiDisplay.display_options(info_mode, map_file)
+            os.system('clear')
+
+            TuiDisplay.display_menu(info_mode, map_file)
 
             user_input = input()
 
             while user_input not in ["s", "i", "q", "l"]:
                 os.system('clear')
-                TuiDisplay.display_options(info_mode, map_file)
+                TuiDisplay.display_menu(info_mode, map_file)
                 user_input = input()
 
             if user_input == "s":
@@ -53,8 +54,6 @@ def main() -> None:
             elif user_input == "l":
                 os.system('clear')
                 ret = launch_drones(map_parser, map_file, states, info_mode)
-
-            os.system('clear')
 
         except KeyboardInterrupt:
 
@@ -89,9 +88,11 @@ def launch_drones(
     """
 
     drone_map: Map | None = map_parser.parse_map(map_file)
+    os.system('clear')
 
     if not drone_map:
-        print(f" ✘ Map '{map_file}' refused : Invalid data")
+        print(f" ✘ Map '{map_file}' refused : Invalid data\n")
+        input("Press any key to continue...")
         return 0
 
     elif map_file not in states.keys() and not PathFinder.calculate_paths(
@@ -101,7 +102,8 @@ def launch_drones(
         drone_map.end_hub,
         []
     ):
-        print(f" ✘ Map '{map_file}' refused : No paths found")
+        print(f" ✘ Map '{map_file}' refused : No paths found\n")
+        input("Press any key to continue...")
         return 0
 
     tui_display: TuiDisplay = TuiDisplay(drone_map, info_mode)
@@ -109,6 +111,7 @@ def launch_drones(
     if map_file not in states.keys():
 
         print(f" ✔ Map '{map_file}' validated!\n")
+        time.sleep(1.5)
 
     if map_file not in states.keys() or (
         info_mode and not any(lst_state[3] for lst_state in states[map_file])
