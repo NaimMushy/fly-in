@@ -2,13 +2,6 @@
 
 NAME		=	fly_in.py
 
-#-------------------------------- INSTALLS -----------------------------------#
-
-INSTALLS	=	pydantic 							\
-				flake8								\
-				mypy								\
-				rich
-
 #-------------------------------- RULES --------------------------------------#
 
 all: $(NAME)
@@ -16,22 +9,29 @@ all: $(NAME)
 $(NAME): install run
 
 install: 
-	python3 -m pip install $(INSTALLS)
+	poetry install
 
 run:
-	@python3 $(NAME)
+	@poetry run python3 $(NAME)
 
 debug:
-	@python3 -m pdb $(NAME)
+	@poetry run python3 -m pdb $(NAME)
 
 clean:
 	find . -name "__pycache__" -type d -exec rm -rf "{}" +
 	find . -name ".mypy_cache" -type d -exec rm -rf "{}" +
 
+fclean: clean
+	poetry env remove --all
+
+re: fclean all
+
 lint:
-	python3 -m flake8 . --exclude .venv
-	python3 -m mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --exclude .venv
+	poetry run flake8 .
+	poetry run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --exclude .venv
 
 lint-strict:
-	python3 -m flake8 . --exclude .venv
-	python3 -m mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --exclude .venv --strict
+	poetry run flake8 .
+	poetry run mypy . --strict
+
+.PHONY: all install run debug clean fclean re lint lint-strict
