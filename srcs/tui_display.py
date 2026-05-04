@@ -5,7 +5,6 @@ from rich.console import Console
 from typing import Callable, Generator
 from .zones import Zone
 from .map_data import Map
-from .drones import Drone
 from .path import PathFinder
 from .state import State, Char
 
@@ -506,7 +505,12 @@ class DisplayZone:
                 lines[r][c].connection_char = CHARACTERS["connection"]
                 lines[r][c].style = self.color
 
-    def update_drones(self, lines: list[list[Char]]) -> None:
+    def update_drones(
+        self,
+        lines: list[list[Char]],
+        drones_delivered: list[int],
+        goal: str
+    ) -> None:
 
         """
 
@@ -521,28 +525,38 @@ class DisplayZone:
         """
 
         if not hasattr(self, "drones"):
-            self.drones: list[tuple[Drone, int, int]] = []
+            self.drones: list[tuple[int, int, int]] = []
+
+        occupying: list[int] = [drone.id for drone in self.zone.occupied]
+
+        if self.zone.name == goal:
+            occupying = drones_delivered
+
+        to_remove: list[tuple[int, int, int]] = []
 
         for drone, row, col in self.drones:
 
-            if drone not in self.zone.occupied:
+            if drone not in occupying:
 
-                self.drones.remove((drone, row, col))
+                to_remove.append((drone, row, col))
 
                 lines[row][col].char = " "
                 lines[row][col].style = ""
 
-                for c in str(drone.id):
+                for c in str(drone):
 
                     col += 1
                     lines[row][col].char = " "
                     lines[row][col].style = ""
 
+        for del_drone, del_row, del_col in to_remove:
+            self.drones.remove((del_drone, del_row, del_col))
+
         if len(self.drones) > 0:
 
             drone_r: int = self.drones[-1][1]
             drone_c: int = (
-                self.drones[-1][2] + 1 + len(str(self.drones[-1][0].id))
+                self.drones[-1][2] + 1 + len(str(self.drones[-1][0]))
             )
 
         else:
@@ -550,7 +564,7 @@ class DisplayZone:
             drone_r = self.row + self.info_mode + 1
             drone_c = self.col + 1
 
-        for drone in self.zone.occupied:
+        for drone in occupying:
 
             if drone in [d[0] for d in self.drones]:
                 continue
@@ -560,7 +574,7 @@ class DisplayZone:
                 drone_c = self.col + 1
 
             self.drones.append((drone, drone_r, drone_c))
-            drone_c += 1 + len(str(drone.id))
+            drone_c += 1 + len(str(drone))
 
         self.update_con_drones(lines)
         self.add_drones(lines)
@@ -580,21 +594,26 @@ class DisplayZone:
         """
 
         if not hasattr(self, "con_drones"):
-            self.con_drones: list[tuple[Drone, int, int, str]] = []
+            self.con_drones: list[tuple[int, int, int, str]] = []
+
+        to_remove: list[tuple[int, int, int, str]] = []
 
         for con_drone, con_r, con_c, p_name in self.con_drones:
 
             if (
-                con_drone in self.zone.occupied
-                or con_drone not in self.zone.connections[p_name].occupied
+                con_drone in [drone.id for drone in self.zone.occupied]
+                or con_drone not in [
+                    drone.id
+                    for drone in self.zone.connections[p_name].occupied
+                ]
             ):
 
-                self.con_drones.remove((con_drone, con_r, con_c, p_name))
+                to_remove.append((con_drone, con_r, con_c, p_name))
 
                 lines[con_r][con_c].connection_char = CHARACTERS["connection"]
                 lines[con_r][con_c].style = self.color
 
-                for c in str(con_drone.id):
+                for c in str(con_drone):
 
                     con_c += 1
 
@@ -607,16 +626,21 @@ class DisplayZone:
                         lines[con_r][con_c].char = " "
                         lines[con_r][con_c].style = ""
 
+        for del_drone, del_row, del_col, del_name in to_remove:
+            self.con_drones.remove((del_drone, del_row, del_col, del_name))
+
         for parent_name, path in self.paths.items():
 
-            for drone in self.zone.connections[parent_name].occupied:
+            for drone in [
+                dr.id for dr in self.zone.connections[parent_name].occupied
+            ]:
 
                 if drone in [cd[0] for cd in self.con_drones]:
                     continue
 
                 if (
                     self.zone.zone_type == "restricted"
-                    and drone not in self.zone.occupied
+                    and drone not in [d.id for d in self.zone.occupied]
                 ):
                     self.con_drones.append((
                         drone, path[len(path) // 2 + len(self.con_drones)][0],
@@ -643,7 +667,7 @@ class DisplayZone:
             lines[row][col].char = CHARACTERS["drone"]
             lines[row][col].style = self.color + " blink"
 
-            for c in str(drone.id):
+            for c in str(drone):
 
                 col += 1
                 lines[row][col].char = c
@@ -654,7 +678,7 @@ class DisplayZone:
             lines[con_row][con_col].connection_char = CHARACTERS["drone"]
             lines[con_row][con_col].style = self.color + " blink"
 
-            for con_c in str(con_drone.id):
+            for con_c in str(con_drone):
 
                 con_col += 1
                 lines[con_row][con_col].char = con_c
@@ -933,7 +957,7 @@ class TuiDisplay:
         self.info_mode: int = info_mode
         self.create_rows()
 
-    def map_updated(self) -> list[list[Char]]:
+    def map_updated(self, drones_delivered: list[int]) -> list[list[Char]]:
 
         """
 
@@ -950,7 +974,11 @@ class TuiDisplay:
 
             for zone in row.zones:
 
-                zone.update_drones(self.lines)
+                zone.update_drones(
+                    self.lines,
+                    drones_delivered,
+                    self.map.end_hub.name
+                )
 
         copycat: list[list[Char]] = []
 

@@ -370,6 +370,8 @@ class DroneMonitor:
 
                 state.zones_occupied[occupied.name].append(drone.id)
 
+        state.drones_delivered = []
+
         for drone in moving_drones:
 
             if drone != moving_drones[0]:
@@ -380,9 +382,9 @@ class DroneMonitor:
             if drone.current_zone == drone.goal:
 
                 self.drones_delivered.append(drone)
+                state.drones_delivered.append(drone.id)
                 self.drones.remove(drone)
 
-        state.drones_delivered = [drone.id for drone in self.drones_delivered]
         self.turns += 1
 
         time.sleep(0.1)

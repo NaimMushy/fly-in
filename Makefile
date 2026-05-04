@@ -6,13 +6,15 @@ NAME		=	fly_in.py
 
 all: $(NAME)
 
+ARGS ?=
+
 $(NAME): install run
 
 install: 
 	poetry install
 
 run:
-	@poetry run python3 $(NAME)
+	@poetry run python3 $(NAME) $(ARGS)
 
 debug:
 	@poetry run python3 -m pdb $(NAME)

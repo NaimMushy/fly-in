@@ -6,12 +6,13 @@ authors = ["ibady"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+pydantic = "^2.12.0"
+rich = "^14.0.0"
+pyfiglet = "^1.0.4"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^7.0.0"
 mypy = "^1.8.0"
-pydantic = "^2.12.0"
-rich = "^14.0.0"
 
 [build-system]
 requires = ["poetry-core"]

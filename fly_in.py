@@ -2,7 +2,7 @@ import sys
 from srcs import MapParser, Map, PathFinder, DroneMonitor, TuiDisplay, State
 
 
-DEFAULT_MAP: str = "tests/sub_testmap.txt"
+DEFAULT_MAP: str = "tests/testmap.txt"
 
 
 def main() -> None:
@@ -103,14 +103,16 @@ def launch_drones(
         )
 
         new_state: State = State(info_mode, tui_display.console)
-        new_state.display_map = tui_display.map_updated()
+        new_state.display_map = tui_display.map_updated([])
         cur_states: list[State] = [new_state]
 
         while drone_monitor.drones:
 
             new_state = State(info_mode, tui_display.console)
             drone_monitor.update_drones(new_state)
-            new_state.display_map = tui_display.map_updated()
+            new_state.display_map = tui_display.map_updated(
+                new_state.drones_delivered
+            )
             cur_states.append(new_state)
 
         if map_file not in states.keys():

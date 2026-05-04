@@ -187,7 +187,7 @@ class Map:
                 f"impossible to create connection '{new_connection}'"
             )
 
-        connection_params: list[str] = new_connection.split(" ")
+        connection_params: list[str] = new_connection.strip().split()
 
         if not connection_params:
 
@@ -195,7 +195,7 @@ class Map:
                 "No definition provided for a connection"
             )
 
-        con_zones: list[str] = connection_params[0].split("-")
+        con_zones: list[str] = connection_params[0].strip().split("-")
         con_metadata: int = MapParser.parse_con_metadata(connection_params)
 
         if len(con_zones) != 2:
@@ -212,7 +212,7 @@ class Map:
 
             raise UndefinedError(
                 f"Invalid hub {con_zones[0]} given "
-                f"for connection '{connection_params[0]}'"
+                f"for connection '{connection_params[0]}'\n"
                 "This hub has not yet been defined"
             )
 
@@ -220,9 +220,12 @@ class Map:
 
             raise UndefinedError(
                 f"Invalid hub {con_zones[1]} given "
-                f"for connection '{connection_params[0]}'"
+                f"for connection '{connection_params[0]}'\n"
                 "This hub has not yet been defined"
             )
+
+        if not hasattr(self, "connections"):
+            self.connections: list[Connection] = []
 
         connection: Connection = Connection(
             name=connection_params[0],
@@ -230,6 +233,7 @@ class Map:
             zone2=scd_zone,
             max_link_capacity=con_metadata
         )
+        self.connections.append(connection)
         fst_zone.add_connection(connection, scd_zone.name)
         scd_zone.add_connection(connection, fst_zone.name)
 
@@ -290,7 +294,7 @@ class Map:
 
         """
 
-        hub_params: list[str] = new_hub.split(" ")
+        hub_params: list[str] = new_hub.strip().split()
 
         if len(hub_params) < 3:
 
@@ -464,12 +468,12 @@ class MapParser:
 
         else:
 
-            for parameter in self.lines.values():
-
-                for definition in parameter[0]:
-                    parameter[1](definition)
-
             try:
+
+                for parameter in self.lines.values():
+
+                    for definition in parameter[0]:
+                        parameter[1](definition)
 
                 if not hasattr(self.map, "start_hub"):
 
@@ -489,9 +493,9 @@ class MapParser:
                         "Missing number of drones!"
                     )
 
-            except MissingValueError as mve:
+            except Exception as err:
 
-                print(f"Caught {mve.__class__.__name__}: {mve}")
+                print(f"Caught {err.__class__.__name__}: {err}")
                 return None
 
             else:
@@ -537,7 +541,7 @@ class MapParser:
                 "'end_hub', 'hub', or 'connection'"
             )
 
-        self.lines[parameter][0].append(match.group(2))
+        self.lines[parameter][0].append(match.group(2).strip())
 
     @staticmethod
     def parse_hub_metadata(params: list[str]) -> tuple[str, str, int]:
@@ -594,8 +598,8 @@ class MapParser:
                 "Metadata must be incased in brackets '[]'"
             )
 
-        params[3] = params[3].replace("[", "")
-        params[-1] = params[-1].replace("]", "")
+        params[3] = params[3].replace("[", "", 1)
+        params[-1] = params[-1].replace("]", "", 1)
 
         for p in range(3, len(params)):
 
