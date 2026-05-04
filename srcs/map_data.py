@@ -410,7 +410,7 @@ class MapParser:
             "connection": ([], self.map.validate_connection)
         }
 
-        print(end=f"\nParsing '{filename}' ")
+        print(end=f"Parsing '{filename}' ")
         for _ in range(3):
 
             for _ in range(3):
@@ -448,21 +448,22 @@ class MapParser:
         except Exception as err:
 
             if isinstance(err, OSError):
-                print(f" => {err}")
+                print(f" => {err}\n")
                 return None
 
             print(
-                f"Caught {err.__class__.__name__} for line:\n"
+                f"Caught {err.__class__.__name__} "
+                f"{'for line ' + line if line else ''}:\n"
             )
 
             if isinstance(err, ValidationError):
 
                 for error in err.errors():
-                    print(f" => {error['msg']}")
+                    print(f" => {error['msg']}\n")
 
             else:
 
-                print(f" => {err}")
+                print(f" => {err}\n")
 
             return None
 
@@ -495,7 +496,7 @@ class MapParser:
 
             except Exception as err:
 
-                print(f"Caught {err.__class__.__name__}: {err}")
+                print(f"Caught {err.__class__.__name__}: {err}\n")
                 return None
 
             else:

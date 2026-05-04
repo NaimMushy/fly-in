@@ -1,4 +1,5 @@
 import sys
+import os
 from srcs import MapParser, Map, PathFinder, DroneMonitor, TuiDisplay, State
 
 
@@ -17,7 +18,9 @@ def main() -> None:
     map_parser: MapParser = MapParser()
     states: dict[str, list[tuple[list[State], int, int, int]]] = {}
 
+    os.system('clear')
     TuiDisplay.display_menu()
+    os.system('clear')
 
     if len(sys.argv) == 2:
         map_file = sys.argv[1]
@@ -26,24 +29,36 @@ def main() -> None:
 
     info_mode: int = 0
     user_input: str = ""
+    ret: int = 0
 
-    while user_input != "q":
+    while user_input != "q" and ret != -1:
 
-        TuiDisplay.display_options(info_mode, map_file)
+        try:
 
-        user_input = input()
+            TuiDisplay.display_options(info_mode, map_file)
 
-        while user_input not in ["s", "i", "q", "l"]:
             user_input = input()
 
-        if user_input == "s":
-            map_file = input("\nEnter the path to the map file: ")
+            while user_input not in ["s", "i", "q", "l"]:
+                os.system('clear')
+                TuiDisplay.display_options(info_mode, map_file)
+                user_input = input()
 
-        elif user_input == "i":
-            info_mode = (1 if info_mode == 0 else 0)
+            if user_input == "s":
+                map_file = input("\nEnter the path to the map file: ")
 
-        elif user_input == "l":
-            launch_drones(map_parser, map_file, states, info_mode)
+            elif user_input == "i":
+                info_mode = (1 if info_mode == 0 else 0)
+
+            elif user_input == "l":
+                os.system('clear')
+                ret = launch_drones(map_parser, map_file, states, info_mode)
+
+            os.system('clear')
+
+        except KeyboardInterrupt:
+
+            return
 
 
 def launch_drones(
@@ -51,7 +66,7 @@ def launch_drones(
     map_file: str,
     states: dict[str, list[tuple[list[State], int, int, int]]],
     info_mode: int
-) -> None:
+) -> int:
 
     """
 
@@ -77,7 +92,7 @@ def launch_drones(
 
     if not drone_map:
         print(f" ✘ Map '{map_file}' refused : Invalid data")
-        return
+        return 0
 
     elif map_file not in states.keys() and not PathFinder.calculate_paths(
         drone_map.start_hub,
@@ -87,7 +102,7 @@ def launch_drones(
         []
     ):
         print(f" ✘ Map '{map_file}' refused : No paths found")
-        return
+        return 0
 
     tui_display: TuiDisplay = TuiDisplay(drone_map, info_mode)
 
@@ -128,18 +143,18 @@ def launch_drones(
     for state_list in states[map_file]:
 
         if state_list[3] and info_mode:
-            show_states(tui_display, state_list)
-            return
+            return show_states(tui_display, state_list)
 
         elif not info_mode and not state_list[3]:
-            show_states(tui_display, state_list)
-            return
+            return show_states(tui_display, state_list)
+
+    return 0
 
 
 def show_states(
     tui_display: TuiDisplay,
     states: tuple[list[State], int, int, int]
-) -> None:
+) -> int:
 
     """
 
@@ -158,33 +173,42 @@ def show_states(
 
     cur_state: int = 0
 
+    os.system('clear')
     tui_display.display_state(states[0][cur_state])
 
     user_input: str = ""
 
     while user_input != "m":
 
-        user_input = input()
+        try:
 
-        while user_input not in ["n", "p", "m"]:
             user_input = input()
 
-        if user_input == "n":
+            while user_input not in ["n", "p", "m"]:
+                user_input = input()
 
-            if cur_state == len(states[0]) - 1:
-                tui_display.display_end(states[3], states[1], states[2])
-                user_input = "m"
+            if user_input == "n":
 
-            else:
-                cur_state += 1
+                os.system('clear')
+                if cur_state == len(states[0]) - 1:
+                    tui_display.display_end(states[3], states[1], states[2])
+                    user_input = "m"
+
+                else:
+                    cur_state += 1
+                    tui_display.display_state(states[0][cur_state])
+
+            elif user_input == "p" and cur_state != 0:
+
+                os.system('clear')
+                cur_state -= 1
                 tui_display.display_state(states[0][cur_state])
 
-        elif user_input == "p" and cur_state != 0:
+        except KeyboardInterrupt:
 
-            cur_state -= 1
-            tui_display.display_state(states[0][cur_state])
+            return -1
 
-    return
+    return 0
 
 
 if __name__ == "__main__":

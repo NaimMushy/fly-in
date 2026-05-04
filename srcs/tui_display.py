@@ -1036,6 +1036,8 @@ class TuiDisplay:
             -'                                '-
         """)
 
+        time.sleep(3)
+
     @staticmethod
     def display_options(info_mode: int, map_file: str) -> None:
 
@@ -1060,7 +1062,7 @@ class TuiDisplay:
             f"({'off' if info_mode == 0 else 'on'})"
         )
         print("     ➤ q: QUIT PROGRAM")
-        time.sleep(0.1)
+        time.sleep(1)
 
     @staticmethod
     def display_state(state: State) -> None:
@@ -1083,7 +1085,7 @@ class TuiDisplay:
         print("     ➤ n: NEXT STEP")
         print("     ➤ p: PREVIOUS STEP")
         print("     ➤ m: RETURN TO MENU")
-        time.sleep(0.1)
+        time.sleep(1)
 
     @staticmethod
     def display_end(info_mode: int, turns: int, avg: int) -> None:
@@ -1110,7 +1112,7 @@ class TuiDisplay:
             print(
                 "     ➤ average number of turns per drone: {avg}"
             )
-        time.sleep(0.1)
+        time.sleep(2)
 
     def in_a_row(self, z: DisplayZone) -> bool:
 

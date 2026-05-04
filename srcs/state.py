@@ -185,7 +185,7 @@ class State:
                 else:
                     print(char_to_print, end="")
 
-        time.sleep(0.1)
+        time.sleep(1)
 
         if not self.drone_moves:
             return
@@ -225,4 +225,4 @@ class State:
 
             print("\n")
 
-        time.sleep(0.1)
+        time.sleep(1)
