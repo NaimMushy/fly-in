@@ -31,16 +31,18 @@
   **1. Execution:**
 
   + Makefile rules:<br><br>
-  ``make run`` -> runs the program without a specific file for the map needed<br>
-  ``make install`` -> installs dependencies<br>
   ``make`` -> installs dependencies and runs the program<br>
+  ``make run`` -> runs the program<br>
+  ``make install`` -> installs dependencies<br>
   ``make clean`` -> removes the __pycache__ files<br>
   ``make lint`` -> checks for mypy and flake8 errors<br>
   ``make lint-strict`` -> checks for mypy --strict and flake8 errors<br>
   ``make debug`` -> runs the program with a debugger<br><br>
+  If you wish to specifiy a map file from the start, define the ARGS as so:<br>
+  ``make run ARGS="<file_path>"``<br><br>
   + Direct execution:<br><br>
   You can also simply run the program with the following:<br>
-  ``python3 -m fly_in <file_path>``<br>
+  ``poetry run python3 fly_in.py <file_path>``<br>
   with file_path being the optional path to the file containing the map data.
 
   **2. Simulation Options:**
