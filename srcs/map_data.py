@@ -1,9 +1,9 @@
 import re
+import time
 from rich.color import Color, ColorParseError
 from typing import Callable
 from pydantic import ValidationError
 from .zones import Zone, Connection
-from .utils import animate_dots
 
 
 class FormatError(Exception):
@@ -74,7 +74,7 @@ class Map:
 
             raise ValueError(
                 f"Invalid value '{nb_drones}' for number of drones\n"
-                "Must be a positive integer"
+                "Must be a positive integer superior to 0"
             )
 
     def validate_start_hub(self, start_hub: str) -> None:
@@ -149,11 +149,6 @@ class Map:
             )
 
         self.end_hub: Zone = self.add_hub(end_hub)
-
-        if self.end_hub.zone_type == "blocked":
-            raise ValueError(
-                "The end hub should not be a blocked zone"
-            )
 
     def validate_connection(self, new_connection: str) -> None:
 
@@ -401,16 +396,29 @@ class MapParser:
 
         self.map: Map = Map()
         self.lines: dict[
-            str, tuple[list[str], Callable[[str], None | Zone]]
+            str, Callable[[str], None | Zone]
         ] = {
-            "nb_drones": ([], self.map.validate_nb_drones),
-            "start_hub": ([], self.map.validate_start_hub),
-            "end_hub": ([], self.map.validate_end_hub),
-            "hub": ([], self.map.add_hub),
-            "connection": ([], self.map.validate_connection)
+            "nb_drones": self.map.validate_nb_drones,
+            "start_hub": self.map.validate_start_hub,
+            "end_hub": self.map.validate_end_hub,
+            "hub": self.map.add_hub,
+            "connection": self.map.validate_connection
         }
 
-        animate_dots(f"Parsing '{filename}' ", 3)
+        print(end=f"Parsing '{filename}' ")
+
+        for _ in range(3):
+
+            for _ in range(3):
+
+                print(end='.', flush=True)
+                time.sleep(0.3)
+
+            print(end='\b\b\b', flush=True)
+            print(end='   ', flush=True)
+            print(end='\b\b\b', flush=True)
+
+        print("\n")
 
         try:
 
@@ -431,7 +439,7 @@ class MapParser:
                                 )
                             fst = False
 
-                        self.parse_line(line.strip())
+                        self.parse_line(line.split("#")[0].rstrip())
 
         except Exception as err:
 
@@ -459,11 +467,6 @@ class MapParser:
 
             try:
 
-                for parameter in self.lines.values():
-
-                    for definition in parameter[0]:
-                        parameter[1](definition)
-
                 if not hasattr(self.map, "start_hub"):
 
                     raise MissingValueError(
@@ -482,14 +485,12 @@ class MapParser:
                         "Missing number of drones!"
                     )
 
-            except Exception as err:
+            except MissingValueError as err:
 
                 print(f"Caught {err.__class__.__name__}: {err}\n")
                 return None
 
             else:
-
-                self.already_parsed[filename] = self.map
 
                 return self.map
 
@@ -530,7 +531,7 @@ class MapParser:
                 "'end_hub', 'hub', or 'connection'"
             )
 
-        self.lines[parameter][0].append(match.group(2).strip())
+        self.lines[parameter](match.group(2).strip())
 
     @staticmethod
     def parse_hub_metadata(params: list[str]) -> tuple[str, str, int]:
@@ -710,8 +711,8 @@ class MapParser:
                     "Metadata must always be incased in brackets '[]'"
                 )
 
-            con_params[1] = con_params[1].replace("[", "")
-            con_params[1] = con_params[1].replace("]", "")
+            con_params[1] = con_params[1].replace("[", "", 1)
+            con_params[1] = con_params[1].replace("]", "", 1)
 
             if not (match := re.match(
                 "max_link_capacity=([0-9]+)",

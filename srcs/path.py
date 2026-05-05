@@ -73,7 +73,7 @@ class PathFinder:
 
         """
 
-        if current_hub.zone_type == "blocked":
+        if current_hub.zone_type == "blocked" or current_hub.max_drones == 0:
 
             return []
 

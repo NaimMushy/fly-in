@@ -369,10 +369,6 @@ class DroneMonitor:
                     state.zones_occupied[occupied.name] = []
 
                 state.zones_occupied[occupied.name].append(drone.id)
-                if isinstance(occupied, Connection):
-                    state.c_occupied[occupied.name] = (len(occupied.occupied), occupied.max_link_capacity)
-                elif isinstance(occupied, Zone):
-                    state.z_occupied[occupied.name] = (len(occupied.occupied), occupied.max_drones)
 
         state.drones_delivered = []
         goal_occupancy: list[int] = []
@@ -391,11 +387,11 @@ class DroneMonitor:
                 self.drones.remove(drone)
 
         if len(goal_occupancy) > 0:
-            state.z_occupied[self.drone_map.end_hub.name] = (len(goal_occupancy), self.drone_map.end_hub.max_drones)
             state.zones_occupied[self.drone_map.end_hub.name] = goal_occupancy
 
         state.drones_delivered = [d.id for d in self.drones_delivered]
 
         self.turns += 1
+        state.turn = self.turns
 
         time.sleep(0.1)

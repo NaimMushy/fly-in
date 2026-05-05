@@ -14,7 +14,7 @@ class Connection(BaseModel):
     name: str
     zone1: "Zone"
     zone2: "Zone"
-    max_link_capacity: int = Field(ge=1)
+    max_link_capacity: int = Field(default=1, ge=0)
     wish_to_occupy: list[any] = Field(default=[])
     occupied: list[any] = Field(default=[])
 
@@ -137,8 +137,8 @@ class Zone(BaseModel):
     x: int
     y: int
     zone_type: str = Field(default="normal")
-    color: str = Field(default="\x1B[37m")
-    max_drones: int = Field(default=1, gt=0)
+    color: str = Field(default="white")
+    max_drones: int = Field(default=1, ge=0)
     connections: dict[str, Connection] = Field(default={})
     wish_to_occupy: list[any] = Field(default=[])
     occupied: list[any] = Field(default=[])

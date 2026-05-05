@@ -1052,7 +1052,7 @@ class TuiDisplay:
         print("     ➤ q: QUIT PROGRAM")
 
     @staticmethod
-    def display_state(state: State) -> None:
+    def display_state(state: State, nb_turns: int) -> None:
 
         """
 
@@ -1068,7 +1068,7 @@ class TuiDisplay:
 
         state.display_info()
 
-        print("\n✦ SIMULATION OPTIONS ✦\n")
+        print(f"\n✦ SIMULATION OPTIONS (turn {state.turn}/{nb_turns}) ✦\n")
         print("     ➤ n: NEXT STEP")
         print("     ➤ p: PREVIOUS STEP")
         print("     ➤ m: RETURN TO MENU")
@@ -1096,9 +1096,10 @@ class TuiDisplay:
         print(f"     ➤ number of turns: {turns}")
         if info_mode != 0:
             print(
-                "     ➤ average number of turns per drone: {avg}"
+                f"     ➤ average number of turns per drone: {avg}"
             )
-        time.sleep(2)
+        print()
+        time.sleep(0.5)
 
     def in_a_row(self, z: DisplayZone) -> bool:
 

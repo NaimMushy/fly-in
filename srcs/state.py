@@ -132,7 +132,11 @@ class State:
 
     """
 
-    def __init__(self, info_mode: int, occ_flag: bool, console: Console) -> None:
+    def __init__(
+        self,
+        info_mode: int,
+        console: Console
+    ) -> None:
 
         """
 
@@ -151,12 +155,10 @@ class State:
         self.display_map: list[list[Char]] = []
         self.drone_moves: str = ""
         self.nb_drone_moved: int = 0
+        self.turn: int = 0
         self.zones_occupied: dict[str, list[int]] = {}
-        self.z_occupied: dict[str, tuple[int, int]] = {}
-        self.c_occupied: dict[str, tuple[int, int]] = {}
         self.drones_delivered: list[int] = []
         self.info_mode: int = info_mode
-        self.occ_flag: bool = occ_flag
         self.console: Console = console
 
     def display_info(self) -> None:
@@ -188,24 +190,14 @@ class State:
                 else:
                     print(char_to_print, end="")
 
-        time.sleep(1)
+        time.sleep(0.3)
 
-        if not self.drone_moves and not self.info_mode and not self.occ_flag:
+        if not self.drone_moves and not self.info_mode:
             return
 
         if self.drone_moves:
             print("\n==== DRONE MOVEMENTS ====\n")
             print(f" ➤ {self.drone_moves}", end="")
-
-        if self.occ_flag:
-
-            for zone, z_occ in self.z_occupied.items():
-
-                print(f" Zone {zone}:{z_occ[0]}/{z_occ[1]}", end="")
-
-            for con, c_occ in self.c_occupied.items():
-
-                print(f" Connection {con}:{c_occ[0]}/{c_occ[1]}", end="")
 
         print()
 
@@ -241,4 +233,4 @@ class State:
 
             print("\n")
 
-        time.sleep(1)
+        time.sleep(0.1)

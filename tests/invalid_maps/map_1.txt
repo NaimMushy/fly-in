@@ -1,4 +1,0 @@
-# First line is not nb_drones
-start_hub: A 0 0
-end_hub: B 10 0
-connection: A-B
