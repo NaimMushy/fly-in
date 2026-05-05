@@ -132,7 +132,7 @@ class State:
 
     """
 
-    def __init__(self, info_mode: int, console: Console) -> None:
+    def __init__(self, info_mode: int, occ_flag: bool, console: Console) -> None:
 
         """
 
@@ -152,8 +152,11 @@ class State:
         self.drone_moves: str = ""
         self.nb_drone_moved: int = 0
         self.zones_occupied: dict[str, list[int]] = {}
+        self.z_occupied: dict[str, tuple[int, int]] = {}
+        self.c_occupied: dict[str, tuple[int, int]] = {}
         self.drones_delivered: list[int] = []
         self.info_mode: int = info_mode
+        self.occ_flag: bool = occ_flag
         self.console: Console = console
 
     def display_info(self) -> None:
@@ -187,12 +190,24 @@ class State:
 
         time.sleep(1)
 
-        if not self.drone_moves:
+        if not self.drone_moves and not self.info_mode and not self.occ_flag:
             return
 
-        print("\n==== DRONE MOVEMENTS ====\n")
+        if self.drone_moves:
+            print("\n==== DRONE MOVEMENTS ====\n")
+            print(f" ➤ {self.drone_moves}", end="")
 
-        print(f" ➤ {self.drone_moves}")
+        if self.occ_flag:
+
+            for zone, z_occ in self.z_occupied.items():
+
+                print(f" Zone {zone}:{z_occ[0]}/{z_occ[1]}", end="")
+
+            for con, c_occ in self.c_occupied.items():
+
+                print(f" Connection {con}:{c_occ[0]}/{c_occ[1]}", end="")
+
+        print()
 
         if self.info_mode != 0:
 
@@ -200,14 +215,15 @@ class State:
 
             print(f" ➤ number of drones that moved: {self.nb_drone_moved}\n")
 
-            print(" ➤ zones currently occupied:\n")
+            print(" ➤ zones currently occupied:", end="")
 
             if len(self.zones_occupied) == 0:
                 print(" 0")
+            print("\n")
 
-            for zone, occupying in self.zones_occupied.items():
+            for name, occupying in self.zones_occupied.items():
 
-                print(f" {zone}:", end="")
+                print(f" {name}:", end="")
 
                 for drone_id in occupying:
                     print(f" D{drone_id}", end="")

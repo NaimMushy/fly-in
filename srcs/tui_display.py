@@ -1050,7 +1050,6 @@ class TuiDisplay:
             f"({'off' if info_mode == 0 else 'on'})"
         )
         print("     ➤ q: QUIT PROGRAM")
-        time.sleep(1)
 
     @staticmethod
     def display_state(state: State) -> None:
@@ -1073,7 +1072,6 @@ class TuiDisplay:
         print("     ➤ n: NEXT STEP")
         print("     ➤ p: PREVIOUS STEP")
         print("     ➤ m: RETURN TO MENU")
-        time.sleep(1)
 
     @staticmethod
     def display_end(info_mode: int, turns: int, avg: int) -> None:
