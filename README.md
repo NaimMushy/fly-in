@@ -45,7 +45,32 @@
   ``poetry run python3 fly_in.py <file_path>``<br>
   with file_path being the optional path to the file containing the map data.
 
-  **2. Simulation Options:**
+  **2. Input File Example:**
+
+  ```
+  nb_drones: 2
+
+  start_hub: start 0 0 [color=green]
+  hub: waypoint1 1 0 [color=blue]
+  hub: waypoint2 2 0 [color=blue]
+  end_hub: goal 3 0 [color=red]
+
+  connection: start-waypoint1
+  connection: waypoint1-waypoint2
+  connection: waypoint2-goal
+  ```
+
+  **3. Output Example:**
+
+  ```
+  [map display]
+
+  ==== DRONE MOVEMENTS ====
+
+   -> D1-waypoint2 D2-waypoint1
+  ```
+
+  **4. Simulation Options:**
 
   + Start Menu:<br>
 
