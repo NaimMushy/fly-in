@@ -112,6 +112,7 @@ def launch_drones(
 
     elif map_file not in states.keys() and not PathFinder.calculate_paths(
         drone_map.start_hub,
+        None,
         [],
         0,
         drone_map.end_hub,

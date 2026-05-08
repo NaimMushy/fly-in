@@ -1,4 +1,4 @@
-from .zones import Zone
+from .zones import Zone, Connection
 from .state import Char
 
 
@@ -41,6 +41,7 @@ class PathFinder:
     @staticmethod
     def calculate_paths(
         current_hub: Zone,
+        current_con: Connection | None,
         current_path: list[Zone],
         cost: int,
         dest: Zone,
@@ -73,41 +74,54 @@ class PathFinder:
 
         """
 
-        if current_hub.zone_type == "blocked" or current_hub.max_drones == 0:
+        if (
+            current_hub.zone_type == "blocked"
+            or current_hub.max_drones == 0
+            or (current_con and current_con.max_link_capacity == 0)
+        ):
 
             return []
 
         if current_hub == dest:
 
-            possible_paths.append(Path(current_path + [dest], cost))
+            print("found destination!!")
+            return possible_paths + [Path(current_path + [dest], cost)]
 
         else:
+            print(f"exploring all connections of hub {current_hub.name}:\n")
 
+            print(f"available connections: {[c.name for c in current_hub.connections.values()]}\n")
             for branch in current_hub.connections.values():
 
                 cost_to_add: int = 1
 
-                if current_hub == branch.zone1:
+                neighbor: Zone = (
+                    branch.zone2 if current_hub == branch.zone1
+                    else branch.zone1
+                )
+                print(f"neighbor found: {neighbor.name}")
 
-                    if branch.zone2 in current_path:
-                        return []
+                if neighbor in current_path:
 
-                    if branch.zone2.zone_type == "restricted":
-                        cost_to_add += 1
+                    continue
 
-                    for path in possible_paths:
-                        if current_path + [current_hub] == path.path:
-                            return []
+                if neighbor.zone_type == "restricted":
+                    cost_to_add += 1
 
-                    PathFinder.calculate_paths(
-                        branch.zone2,
-                        current_path + [current_hub],
-                        cost + cost_to_add,
-                        dest,
-                        possible_paths
-                    )
+                for path in possible_paths:
 
-        return possible_paths
+                    if current_path + [current_hub] == path.path:
+                        return possible_paths
+
+                print("neighbor validated!\n")
+                return possible_paths + PathFinder.calculate_paths(
+                    neighbor,
+                    branch,
+                    current_path + [current_hub],
+                    cost + cost_to_add,
+                    dest,
+                    possible_paths
+                )
 
     @staticmethod
     def find_valid_neighbors(

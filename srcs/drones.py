@@ -211,17 +211,18 @@ class Drone:
 
         possible_paths: list[Path] = PathFinder.calculate_paths(
             self.current_zone,
+            None,
             [],
             0,
             self.goal,
             []
         )
 
-        if hasattr(self, "path_to_follow"):
-            print(f"old path to follow for drone {self.id}:", end="")
-            for p in self.path_to_follow.path:
-                print(f" {p.name}", end="")
-            print()
+#         if hasattr(self, "path_to_follow"):
+#             print(f"old path to follow for drone {self.id}:", end="")
+#             for p in self.path_to_follow.path:
+#                 print(f" {p.name}", end="")
+#             print()
         for path in possible_paths:
 
             if len(path.path) > 1:
@@ -257,10 +258,10 @@ class Drone:
             ):
                 self.path_to_follow = path
 
-        print(f"new path to follow for drone {self.id}:", end="")
-        for p in self.path_to_follow.path:
-            print(f" {p.name}", end="")
-        print()
+#         print(f"new path to follow for drone {self.id}:", end="")
+#         for p in self.path_to_follow.path:
+#             print(f" {p.name}", end="")
+#         print()
         self.next_zone: Zone = self.path_to_follow.path[0]
         self.update_intent()
 
