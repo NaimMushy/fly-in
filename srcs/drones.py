@@ -217,6 +217,11 @@ class Drone:
             []
         )
 
+        if hasattr(self, "path_to_follow"):
+            print(f"old path to follow for drone {self.id}:", end="")
+            for p in self.path_to_follow.path:
+                print(f" {p.name}", end="")
+            print()
         for path in possible_paths:
 
             if len(path.path) > 1:
@@ -239,7 +244,7 @@ class Drone:
             if path.path[0].zone_type == "priority":
                 path.priority = True
 
-        self.path_to_follow = possible_paths[0]
+        self.path_to_follow: Path = possible_paths[0]
 
         for path in possible_paths:
 
@@ -252,6 +257,10 @@ class Drone:
             ):
                 self.path_to_follow = path
 
+        print(f"new path to follow for drone {self.id}:", end="")
+        for p in self.path_to_follow.path:
+            print(f" {p.name}", end="")
+        print()
         self.next_zone: Zone = self.path_to_follow.path[0]
         self.update_intent()
 

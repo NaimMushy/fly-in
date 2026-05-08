@@ -532,42 +532,23 @@ class DisplayZone:
         if self.zone.name == goal:
             occupying = drones_delivered
 
-        to_remove: list[tuple[int, int, int]] = []
-
         for drone, row, col in self.drones:
 
-            if drone not in occupying:
+            lines[row][col].char = " "
+            lines[row][col].style = ""
 
-                to_remove.append((drone, row, col))
+            for c in str(drone):
 
+                col += 1
                 lines[row][col].char = " "
                 lines[row][col].style = ""
 
-                for c in str(drone):
+        self.drones = []
 
-                    col += 1
-                    lines[row][col].char = " "
-                    lines[row][col].style = ""
-
-        for del_drone, del_row, del_col in to_remove:
-            self.drones.remove((del_drone, del_row, del_col))
-
-        if len(self.drones) > 0:
-
-            drone_r: int = self.drones[-1][1]
-            drone_c: int = (
-                self.drones[-1][2] + 1 + len(str(self.drones[-1][0]))
-            )
-
-        else:
-
-            drone_r = self.row + self.info_mode + 1
-            drone_c = self.col + 1
+        drone_r = self.row + self.info_mode + 1
+        drone_c = self.col + 1
 
         for drone in occupying:
-
-            if drone in [d[0] for d in self.drones]:
-                continue
 
             if drone_c >= self.col + self.size * 2 - 2:
                 drone_r += 1
@@ -596,47 +577,31 @@ class DisplayZone:
         if not hasattr(self, "con_drones"):
             self.con_drones: list[tuple[int, int, int, str]] = []
 
-        to_remove: list[tuple[int, int, int, str]] = []
-
         for con_drone, con_r, con_c, p_name in self.con_drones:
 
-            if (
-                con_drone in [drone.id for drone in self.zone.occupied]
-                or con_drone not in [
-                    drone.id
-                    for drone in self.zone.connections[p_name].occupied
-                ]
-            ):
+            lines[con_r][con_c].connection_char = CHARACTERS["connection"]
+            lines[con_r][con_c].style = self.color
 
-                to_remove.append((con_drone, con_r, con_c, p_name))
+            for c in str(con_drone):
 
-                lines[con_r][con_c].connection_char = CHARACTERS["connection"]
-                lines[con_r][con_c].style = self.color
+                con_c += 1
 
-                for c in str(con_drone):
+                if lines[con_r][con_c].connection_char:
+                    lines[con_r][con_c].connection_char = CHARACTERS[
+                        "connection"
+                    ]
+                    lines[con_r][con_c].style = self.color
+                else:
+                    lines[con_r][con_c].char = " "
+                    lines[con_r][con_c].style = ""
 
-                    con_c += 1
-
-                    if lines[con_r][con_c].connection_char:
-                        lines[con_r][con_c].connection_char = CHARACTERS[
-                            "connection"
-                        ]
-                        lines[con_r][con_c].style = self.color
-                    else:
-                        lines[con_r][con_c].char = " "
-                        lines[con_r][con_c].style = ""
-
-        for del_drone, del_row, del_col, del_name in to_remove:
-            self.con_drones.remove((del_drone, del_row, del_col, del_name))
+        self.con_drones = []
 
         for parent_name, path in self.paths.items():
 
             for drone in [
                 dr.id for dr in self.zone.connections[parent_name].occupied
             ]:
-
-                if drone in [cd[0] for cd in self.con_drones]:
-                    continue
 
                 if (
                     self.zone.zone_type == "restricted"
