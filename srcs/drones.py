@@ -2,7 +2,6 @@ from .zones import Zone, Connection
 from .map_data import Map
 from .path import Path, PathFinder
 from .state import State
-from typing import Callable
 import time
 
 
@@ -77,7 +76,7 @@ class Drone:
 
         if self.is_next_step_accessible(self.path_to_follow):
 
-            print(f"drone {self.id} can move to next zone {self.next_zone.name}")
+            # print(f"drone {self.id} can move to next zone {self.next_zone.name}")
             self.waiting = False
 
             for occup in self.occupying:
@@ -117,7 +116,7 @@ class Drone:
 
         else:
 
-            print(f"drone {self.id} has to wait a turn")
+            # print(f"drone {self.id} has to wait a turn")
             self.waiting = True
 
     def is_next_step_accessible(self, path: Path) -> bool:
@@ -143,10 +142,7 @@ class Drone:
             isinstance(self.current_zone, Connection)
             or (
                 hasattr(self, "next_zone")
-                and (
-                    self.current_zone == path.path[0]
-                    or path.path[0] == self.goal
-                )
+                and self.current_zone == path.path[0]
             )
         ):
             return True
@@ -199,7 +195,7 @@ class Drone:
             con.occupied.remove(self)
             self.occupying.remove(con)
 
-    def reevaluate_drone_path(self) -> None:
+    def reevaluate_drone_path(self, cache: dict[str, list[Path]]) -> None:
 
         """
 
@@ -212,18 +208,24 @@ class Drone:
 
         self.free_connections()
 
-        possible_paths: list[Path] = PathFinder.calculate_paths(
-            self.current_zone,
-            self.goal
-        )
+        cache_path: str = self.current_zone.name
+        possible_paths: list[Path] = []
+        if cache_path in cache.keys():
+            possible_paths = [Path(list(p.path), p.cost) for p in cache[cache_path]]
+        else:
+            possible_paths = PathFinder.calculate_paths(
+                self.current_zone,
+                self.goal
+            )
+            cache[cache_path] = [Path(list(p.path), p.cost) for p in possible_paths]
 
-        # time.sleep(1)
-        if hasattr(self, "path_to_follow"):
-            print(f"old path to follow for drone {self.id}:", end="")
-            for p in self.path_to_follow.path:
-                print(f" {p.name}", end="")
-            print()
-        # time.sleep(1)
+#         time.sleep(1)
+#         if hasattr(self, "path_to_follow"):
+#             print(f"old path to follow for drone {self.id}:", end="")
+#             for p in self.path_to_follow.path:
+#                 print(f" {p.name}", end="")
+#             print()
+#         time.sleep(1)
         for path in possible_paths:
 
             if len(path.path) > 1:
@@ -262,14 +264,13 @@ class Drone:
             ):
                 self.path_to_follow = path
 
-        # time.sleep(1)
-        print(f"new path to follow for drone {self.id}:", end="")
-        for p in self.path_to_follow.path:
-            print(f" {p.name}", end="")
-        print()
-        # time.sleep(1)
+#         time.sleep(1)
+#         print(f"new path to follow for drone {self.id}:", end="")
+#         for p in self.path_to_follow.path:
+#             print(f" {p.name}", end="")
+#         print()
+#         time.sleep(1)
         self.next_zone: Zone = self.path_to_follow.path[0]
-        self.update_intent()
 
 
 class DroneMonitor:
@@ -331,14 +332,16 @@ class DroneMonitor:
     def recursive_path_update(
         self,
         current_drone: Drone,
-        updated_drones: list[Drone]
+        updated_drones: set[Drone]
     ) -> None:
 
         if current_drone in updated_drones:
-            print(f"drone {current_drone.id} has already been updated!")
+            # print(f"drone {current_drone.id} has already been updated!")
             return
 
-        current_drone.reevaluate_drone_path()
+        # print(f"reevaluating path for drone {current_drone.id}...\n")
+        current_drone.reevaluate_drone_path(self.path_cache)
+        # print("finished reevaluating path!")
 
         if (
             hasattr(current_drone, "next_zone") and
@@ -348,21 +351,22 @@ class DroneMonitor:
             for neighbor_drone in current_drone.next_zone.occupied:
                 if neighbor_drone == current_drone:
                     continue
-                print(f"drone {current_drone.id} is trying to update neighbor {neighbor_drone.id}")
+                # print(f"drone {current_drone.id} is trying to update neighbor {neighbor_drone.id}")
                 self.recursive_path_update(neighbor_drone, updated_drones)
 
-        current_drone.reevaluate_drone_path()
+        current_drone.reevaluate_drone_path(self.path_cache)
         current_drone.update_intent()
-        updated_drones.append(current_drone)
+        updated_drones.add(current_drone)
+        # print(f"adding drone {current_drone.id} to the updated drones after intent\n")
 
     def recursive_action_update(
         self,
         current_drone: Drone,
-        updated_drones: list[Drone]
+        updated_drones: set[Drone]
     ) -> None:
 
         if current_drone in updated_drones:
-            print(f"drone {current_drone.id} has already been updated!")
+            # print(f"drone {current_drone.id} has already been updated!")
             return
 
         if (
@@ -373,11 +377,11 @@ class DroneMonitor:
             for neighbor_drone in current_drone.next_zone.occupied:
                 if neighbor_drone == current_drone:
                     continue
-                print(f"drone {current_drone.id} is trying to update neighbor {neighbor_drone.id}")
+                # print(f"drone {current_drone.id} is trying to update neighbor {neighbor_drone.id}")
                 self.recursive_action_update(neighbor_drone, updated_drones)
 
         current_drone.turn_action()
-        updated_drones.append(current_drone)
+        updated_drones.add(current_drone)
 
     def update_drones(self, state: State) -> None:
 
@@ -395,11 +399,12 @@ class DroneMonitor:
 
         """
 
-        updated_drones: list[Drone] = []
+        self.path_cache: dict[str, list[Path]] = {}
+        updated_drones: set[Drone] = set()
         for drone in self.drones:
             self.recursive_path_update(drone, updated_drones)
 
-        updated_drones = []
+        updated_drones = set()
         for drone in self.drones:
             self.recursive_action_update(drone, updated_drones)
 
@@ -415,14 +420,14 @@ class DroneMonitor:
 
             drone.turns += 1
 
-        print(f"moving drones: {[d_m.id for d_m in moving_drones]}")
+        # print(f"moving drones: {[d_m.id for d_m in moving_drones]}")
         moving_drones += [
             drone for drone in self.drones
             if drone not in moving_drones
             and not drone.waiting
         ]
-        print(f"updated drones: {[d.id for d in updated_drones]}")
-        print(f"moving drones: {[d_m.id for d_m in moving_drones]}")
+        # print(f"updated drones: {[d.id for d in updated_drones]}")
+        # print(f"moving drones: {[d_m.id for d_m in moving_drones]}")
 
         state.nb_drone_moved = len(moving_drones)
 
