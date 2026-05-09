@@ -3,7 +3,7 @@ import pyfiglet
 from rich import print
 from rich.console import Console
 from typing import Callable, Generator
-from .zones import Zone
+from .zones import Zone, Connection
 from .map_data import Map
 from .path import PathFinder
 from .state import State, Char
@@ -1109,6 +1109,8 @@ class TuiDisplay:
 
         goal: DisplayZone = self.zones[self.map.end_hub.name]
 
+        connections_explored: list[Connection] = []
+
         while goal not in self.rows[cur_row].zones:
 
             self.rows.append(Row(cur_row + 1, self.padding))
@@ -1117,12 +1119,17 @@ class TuiDisplay:
 
                 for connection in z.zone.connections.values():
 
-                    new_zone = self.zones[connection.zone2.name]
-
-                    if z == new_zone:
+                    if connection in connections_explored:
                         continue
 
+                    new_zone = (
+                        self.zones[connection.zone2.name]
+                        if z.zone == connection.zone1
+                        else self.zones[connection.zone1.name]
+                    )
+
                     new_zone.parents.append(z)
+                    connections_explored.append(connection)
 
                     if self.in_a_row(new_zone):
                         continue

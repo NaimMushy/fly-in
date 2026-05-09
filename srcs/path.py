@@ -61,73 +61,107 @@ class PathFinder:
         """
 
         current_hub: Zone = start
-        current_con: Connection = [
-            c for c in current_hub.connections.values()
-        ][0]
+        current_con: Connection | None = None
         possible_paths: list[Path] = []
-        current_path: list[tuple[Zone, Connection]] = [
-            (current_hub, current_con)
-        ]
+        current_path: list[tuple[Zone, Connection | None]] = []
+        paths_refused: list[list[tuple[Zone, Connection | None]]] = []
         cost: int = 0
+        found: bool = False
 
-        while current_path:
+        while True:
 
             if (
                 current_hub.zone_type == "blocked"
                 or current_hub.max_drones == 0
-                or current_con.max_link_capacity == 0
+                or (current_con and current_con.max_link_capacity == 0)
             ):
                 if not current_path:
                     break
+                if current_path + [(current_hub, current_con)] not in paths_refused:
+                    paths_refused.append([z_c for z_c in current_path] + [(current_hub, current_con)])
                 current_hub, current_con = current_path.pop()
-
-            elif current_hub == dest:
-                possible_paths.append(Path([
-                    z for z in current_path if isinstance(z, Zone)
-                ] + [dest], cost))
 
             else:
-                found: bool = False
-                for branch in current_hub.connections.values():
+                current_path.append((current_hub, current_con))
+                print(f"adding hub {current_hub.name} to current path\n")
 
-                    cost_to_add: int = 1
+                if current_hub == dest:
+                    print("found destination!\n")
+                    possible_paths.append(Path([
+                        z for z, c in current_path
+                    ], cost))
+                    current_path.pop()
+                    if not current_path:
+                        break
+                    current_hub, current_con = current_path.pop()
 
-                    neighbor: Zone = (
-                        branch.zone2 if current_hub == branch.zone1
-                        else branch.zone1
-                    )
+                else:
+                    found = False
+                    print(f"exploring all connections of hub {current_hub.name}\n")
+                    for branch in current_hub.connections.values():
 
-                    if neighbor in current_path:
-                        continue
+                        cost_to_add: int = 1
 
-                    if neighbor.zone_type == "restricted":
-                        cost_to_add += 1
+                        neighbor: Zone = (
+                            branch.zone2 if current_hub == branch.zone1
+                            else branch.zone1
+                        )
+                        print(f"found neighbor {neighbor.name}\n")
 
-                    for path in possible_paths:
+                        print("paths refused until now:\n")
+                        for p_r in paths_refused:
+                            print(f"- {[zone.name for zone, con in p_r]}\n")
+                        if neighbor in [zone for zone, con in current_path]:
+                            print("neighbor already in current path\n")
+                            continue
 
-                        for z in range(len(current_path)):
+                        if neighbor.zone_type == "restricted":
+                            cost_to_add += 1
 
-                            if path.path[z] != [
-                                zone for zone in current_path
-                                if isinstance(zone, Zone)
-                            ][z]:
+                        if current_path + [(neighbor, branch)] in paths_refused:
+                            print("neighbor is in a refused path\n")
+                            continue
+
+                        if not possible_paths:
+                            already_exists: bool = False
+                        else:
+                            already_exists = True
+                        for path in possible_paths:
+
+                            already_exists = True
+                            if len(path.path) < len(current_path) + 1:
+                                continue
+                            for z in range(len(current_path) + 1):
+
+                                if path.path[z] != ([
+                                    zone for zone, con in current_path
+                                ] + [neighbor])[z]:
+                                    already_exists = False
+                                    break
+
+                            if already_exists:
                                 break
 
-                        continue
+                        if not already_exists:
+                            current_hub = neighbor
+                            current_con = branch
+                            cost += cost_to_add
+                            found = True
+                            break
 
-                    current_hub = neighbor
-                    current_con = branch
-                    current_path.append((current_hub, current_con))
-                    cost += cost_to_add
-                    found = True
-                    break
+                    if not found:
+                        print("found no neighbor, adding current path to refused paths\n")
+                        if current_path not in paths_refused:
+                            paths_refused.append([z_c for z_c in current_path])
+                        if not current_path:
+                            break
 
-            if not found:
-                if not current_path:
-                    break
+                        current_path.pop()
+                        if not current_path:
+                            break
+                        current_hub, current_con = current_path.pop()
 
-                current_hub, current_con = current_path.pop()
-
+        print(f"number of paths found: {len(possible_paths)}")
         return possible_paths
 
     @staticmethod

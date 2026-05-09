@@ -1,7 +1,7 @@
 import sys
 import os
 import time
-from srcs import MapParser, Map, PathFinder, DroneMonitor, TuiDisplay, State
+from srcs import MapParser, Map, Path, PathFinder, DroneMonitor, TuiDisplay, State
 
 
 DEFAULT_MAP: str = "maps/easy/01_linear_path.txt"
@@ -111,13 +111,13 @@ def launch_drones(
         return 0
 
     elif map_file not in states.keys() and not PathFinder.calculate_paths(
-        drone_map.start_hub,
-        drone_map.end_hub
+        drone_map.start_hub, drone_map.end_hub
     ):
         print(f" ✘ Map '{map_file}' refused : No paths found\n")
         input("Press any key to continue...")
         return 0
 
+    time.sleep(1)
     tui_display: TuiDisplay = TuiDisplay(drone_map, info_mode)
 
     if map_file not in states.keys():
