@@ -112,11 +112,7 @@ def launch_drones(
 
     elif map_file not in states.keys() and not PathFinder.calculate_paths(
         drone_map.start_hub,
-        None,
-        [],
-        0,
-        drone_map.end_hub,
-        []
+        drone_map.end_hub
     ):
         print(f" ✘ Map '{map_file}' refused : No paths found\n")
         input("Press any key to continue...")

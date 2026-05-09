@@ -39,33 +39,19 @@ class PathFinder:
     """
 
     @staticmethod
-    def calculate_paths(
-        current_hub: Zone,
-        current_con: Connection | None,
-        current_path: list[Zone],
-        cost: int,
-        dest: Zone,
-        possible_paths: list[Path]
-    ) -> list[Path]:
+    def calculate_paths(start: Zone, dest: Zone) -> list[Path]:
 
         """
 
         Calculates all the available paths
-        between a starting zone and a goal zone
-        using recursion and backtracking.
+        between a starting zone and a goal zone.
 
         Parameters
         ----------
-        current_hub : Zone
-            The zone the path is currently at.
-        current_path : list[Zone]
-            The current path being constructed.
-        cost : int
-            The accumulated cost of the current path.
+        start : Zone
+            The starting zone of the pathfinding.
         dest : Zone
             The goal point of the path.
-        possible_paths : list[Path]
-            The total list of paths found until now.
 
         Returns
         -------
@@ -74,54 +60,85 @@ class PathFinder:
 
         """
 
-        if (
-            current_hub.zone_type == "blocked"
-            or current_hub.max_drones == 0
-            or (current_con and current_con.max_link_capacity == 0)
-        ):
+        current_hub: Zone = start
+        current_con: Connection = [
+            c for c in current_hub.connections.values()
+        ][0]
+        possible_paths: list[Path] = []
+        current_path: list[tuple[Zone, Connection]] = [
+            (current_hub, current_con)
+        ]
+        cost: int = 0
 
-            return []
+        while current_path:
 
-        if current_hub == dest:
+            if (
+                current_hub.zone_type == "blocked"
+                or current_hub.max_drones == 0
+                or current_con.max_link_capacity == 0
+            ):
+                if not current_path:
+                    break
+                current_hub, current_con = current_path.pop()
 
-            print("found destination!!")
-            return possible_paths + [Path(current_path + [dest], cost)]
+            elif current_hub == dest:
+                possible_paths.append(Path([
+                    z for z in current_path if isinstance(z, Zone)
+                ] + [dest], cost))
 
-        else:
-            print(f"exploring all connections of hub {current_hub.name}:\n")
+            else:
+                found: bool = False
+                for branch in current_hub.connections.values():
 
-            print(f"available connections: {[c.name for c in current_hub.connections.values()]}\n")
-            for branch in current_hub.connections.values():
+                    cost_to_add: int = 1
 
-                cost_to_add: int = 1
+                    neighbor: Zone = (
+                        branch.zone2 if current_hub == branch.zone1
+                        else branch.zone1
+                    )
 
-                neighbor: Zone = (
-                    branch.zone2 if current_hub == branch.zone1
-                    else branch.zone1
-                )
-                print(f"neighbor found: {neighbor.name}")
+                    if neighbor in current_path:
+                        continue
 
-                if neighbor in current_path:
+                    if neighbor.zone_type == "restricted":
+                        cost_to_add += 1
 
-                    continue
+                    for path in possible_paths:
 
-                if neighbor.zone_type == "restricted":
-                    cost_to_add += 1
+                        for z in range(len(current_path)):
 
-                for path in possible_paths:
+                            if path.path[z] != [
+                                zone for zone in current_path
+                                if isinstance(zone, Zone)
+                            ][z]:
+                                break
 
-                    if current_path + [current_hub] == path.path:
-                        return possible_paths
+                        continue
 
-                print("neighbor validated!\n")
-                return possible_paths + PathFinder.calculate_paths(
-                    neighbor,
-                    branch,
-                    current_path + [current_hub],
-                    cost + cost_to_add,
-                    dest,
-                    possible_paths
-                )
+                    current_hub = neighbor
+                    current_con = branch
+                    current_path.append((current_hub, current_con))
+                    cost += cost_to_add
+                    found = True
+                    break
+
+            if not found:
+                if not current_path:
+                    break
+
+                current_hub, current_con = current_path.pop()
+
+        return possible_paths
+
+    @staticmethod
+    def equal_paths(path: list[Zone], path_to_compare: list[Zone]) -> bool:
+
+        for z in range(len(path_to_compare)):
+
+            if path[z] != path_to_compare[z]:
+                return False
+
+        return True
 
     @staticmethod
     def find_valid_neighbors(

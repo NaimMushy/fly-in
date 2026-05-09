@@ -211,11 +211,7 @@ class Drone:
 
         possible_paths: list[Path] = PathFinder.calculate_paths(
             self.current_zone,
-            None,
-            [],
-            0,
-            self.goal,
-            []
+            self.goal
         )
 
 #         if hasattr(self, "path_to_follow"):
