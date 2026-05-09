@@ -141,8 +141,8 @@ class Drone:
             or (
                 hasattr(self, "next_zone")
                 and (
-                    self.current_zone == self.next_zone
-                    or self.next_zone == self.goal
+                    self.current_zone == path.path[0]
+                    or path.path[0] == self.goal
                 )
             )
         ):
@@ -214,13 +214,11 @@ class Drone:
             self.goal
         )
 
-        time.sleep(2)
-        if hasattr(self, "path_to_follow"):
-            print(f"old path to follow for drone {self.id}:", end="")
-            for p in self.path_to_follow.path:
-                print(f" {p.name}", end="")
-            print()
-        time.sleep(2)
+#         if hasattr(self, "path_to_follow"):
+#             print(f"old path to follow for drone {self.id}:", end="")
+#             for p in self.path_to_follow.path:
+#                 print(f" {p.name}", end="")
+#             print()
         for path in possible_paths:
 
             if len(path.path) > 1:
@@ -228,6 +226,7 @@ class Drone:
 
             if not self.is_next_step_accessible(path):
 
+                # print(f"next step is not accessible for drone {self.id}\n")
                 if not path.path[0].connections[
                     self.current_zone.name
                 ].is_accessible(self.id):
@@ -239,6 +238,8 @@ class Drone:
                 elif not path.path[0].is_accessible(self.id):
 
                     path.cost += path.path[0].calculate_wait_cost(self.id)
+
+                # print(f"new cost of path : {path.cost}\n")
 
             if path.path[0].zone_type == "priority":
                 path.priority = True
@@ -256,12 +257,10 @@ class Drone:
             ):
                 self.path_to_follow = path
 
-        time.sleep(2)
-        print(f"new path to follow for drone {self.id}:", end="")
-        for p in self.path_to_follow.path:
-            print(f" {p.name}", end="")
-        print()
-        time.sleep(2)
+#         print(f"new path to follow for drone {self.id}:", end="")
+#         for p in self.path_to_follow.path:
+#             print(f" {p.name}", end="")
+#         print()
         self.next_zone: Zone = self.path_to_follow.path[0]
         self.update_intent()
 

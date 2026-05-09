@@ -60,12 +60,14 @@ class PathFinder:
 
         """
 
+        if start == dest:
+            return [Path([start], 1)]
         current_hub: Zone = start
         current_con: Connection | None = None
         possible_paths: list[Path] = []
         current_path: list[tuple[Zone, Connection | None]] = []
         paths_refused: list[list[tuple[Zone, Connection | None]]] = []
-        cost: int = 0
+        current_cost: int = 0
         found: bool = False
 
         while True:
@@ -77,49 +79,45 @@ class PathFinder:
             ):
                 if not current_path:
                     break
-                if current_path + [(current_hub, current_con)] not in paths_refused:
-                    paths_refused.append([z_c for z_c in current_path] + [(current_hub, current_con)])
-                current_hub, current_con = current_path.pop()
+                if current_path + [(current_hub, current_con, current_cost)] not in paths_refused:
+                    paths_refused.append([z_c for z_c in current_path] + [(current_hub, current_con, current_cost)])
+                current_hub, current_con, current_cost = current_path.pop()
 
             else:
-                current_path.append((current_hub, current_con))
-                print(f"adding hub {current_hub.name} to current path\n")
+                current_path.append((current_hub, current_con, current_cost))
+                # print(f"adding hub {current_hub.name} to current path\n")
 
                 if current_hub == dest:
-                    print("found destination!\n")
+                    # print("found destination!\n")
                     possible_paths.append(Path([
-                        z for z, c in current_path
-                    ], cost))
+                        z for z, c, cost in current_path
+                    ], current_cost))
                     current_path.pop()
                     if not current_path:
                         break
-                    current_hub, current_con = current_path.pop()
+                    current_hub, current_con, current_cost = current_path.pop()
 
                 else:
                     found = False
-                    print(f"exploring all connections of hub {current_hub.name}\n")
+                    # print(f"exploring all connections of hub {current_hub.name}\n")
                     for branch in current_hub.connections.values():
-
-                        cost_to_add: int = 1
 
                         neighbor: Zone = (
                             branch.zone2 if current_hub == branch.zone1
                             else branch.zone1
                         )
-                        print(f"found neighbor {neighbor.name}\n")
+                        cost_to_add: int = (2 if neighbor.zone_type == "restricted" else 1)
+                        # print(f"found neighbor {neighbor.name}\n")
 
-                        print("paths refused until now:\n")
-                        for p_r in paths_refused:
-                            print(f"- {[zone.name for zone, con in p_r]}\n")
-                        if neighbor in [zone for zone, con in current_path]:
-                            print("neighbor already in current path\n")
+                        # print("paths refused until now:\n")
+                        # for p_r in paths_refused:
+                        #     print(f"- {[zone.name for zone, con, cost in p_r]}\n")
+                        if neighbor in [zone for zone, con, cost in current_path]:
+                            # print("neighbor already in current path\n")
                             continue
 
-                        if neighbor.zone_type == "restricted":
-                            cost_to_add += 1
-
-                        if current_path + [(neighbor, branch)] in paths_refused:
-                            print("neighbor is in a refused path\n")
+                        if current_path + [(neighbor, branch, current_cost + cost_to_add)] in paths_refused:
+                            # print("neighbor is in a refused path\n")
                             continue
 
                         if not possible_paths:
@@ -134,7 +132,7 @@ class PathFinder:
                             for z in range(len(current_path) + 1):
 
                                 if path.path[z] != ([
-                                    zone for zone, con in current_path
+                                    zone for zone, con, cost in current_path
                                 ] + [neighbor])[z]:
                                     already_exists = False
                                     break
@@ -145,12 +143,12 @@ class PathFinder:
                         if not already_exists:
                             current_hub = neighbor
                             current_con = branch
-                            cost += cost_to_add
+                            current_cost += cost_to_add
                             found = True
                             break
 
                     if not found:
-                        print("found no neighbor, adding current path to refused paths\n")
+                        # print("found no neighbor, adding current path to refused paths\n")
                         if current_path not in paths_refused:
                             paths_refused.append([z_c for z_c in current_path])
                         if not current_path:
@@ -159,20 +157,13 @@ class PathFinder:
                         current_path.pop()
                         if not current_path:
                             break
-                        current_hub, current_con = current_path.pop()
+                        current_hub, current_con, current_cost = current_path.pop()
 
-        print(f"number of paths found: {len(possible_paths)}")
+        # print(f"number of paths found: {len(possible_paths)}\n")
+        # print("paths found:\n")
+        # for path in possible_paths:
+        #     print(f"-> {[z.name for z in path.path]}, cost = {path.cost}\n")
         return possible_paths
-
-    @staticmethod
-    def equal_paths(path: list[Zone], path_to_compare: list[Zone]) -> bool:
-
-        for z in range(len(path_to_compare)):
-
-            if path[z] != path_to_compare[z]:
-                return False
-
-        return True
 
     @staticmethod
     def find_valid_neighbors(
