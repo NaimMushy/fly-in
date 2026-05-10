@@ -78,6 +78,7 @@
       - select new map -> change the drone map used for the simulation<br>
       - launch the drones -> start the simulation using the map selected<br>
       - toggle info mode -> turn on and off the information mode, which provides additional information throughout the simulation<br>
+      - display map paths -> show a list of all available paths for the drone maps included in the subject (for tests)<br>
       - quit the program -> exit<br><br>
     
     If the map given to parse is invalid or cannot be opened, the appropriate error message is displayed and the user has to change maps to be able to run the simulation.<br>
@@ -106,13 +107,15 @@
     - [Rich text documentation](https://rich.readthedocs.io/en/stable/text.html)<br>
     - [Blinking dots animation](https://stackoverflow.com/questions/58212749/triple-dots-animation-while-program-is-loading-in-terminal)<br><br>
 
-  General code:<br><br>
-    - [Geeksforgeeks Python documentation](https://www.geeksforgeeks.org/python)<br>
-    - [W3schools Python documentation](https://www.w3schools.com/python)<br><br>
+  Algorithm:<br><br>
+    - [Geeksforgeeks Python documentation on heapq](https://www.geeksforgeeks.org/python/heap-queue-or-heapq-in-python/)<br>
+    - [Geeksforgeeks Dijkstra explanation](https://www.geeksforgeeks.org/dsa/dijkstras-shortest-path-algorithm-greedy-algo-7/)<br>
+    - [Wikipedia page for Dijkstra algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)<br>
+    - [Wikipedia page for Yen's K algorithm](https://en.wikipedia.org/wiki/Yen%27s_algorithm)<br><br>
 
   **AI Usage:**
   
-  I asked ChatGPT for help regarding some issues with the terminal display, but otherwise very little AI was used.<br>
+  I asked ChatGPT for some help regarding some issues with the terminal display as well as for debugging.<br>
 
 </details>
 
@@ -124,10 +127,10 @@
 
   **Pathfinding Algorithm:**
 
-  I used a custom algorithm based on recursion.<br>
-  I start from a certain zone, if the zone is valid (meaning not blocked), I add the zone and its cost (in turns) to a Path object.<br>
-  Then I explore each of the neighboring zones connected to that zone and repeat the same steps.<br>
-  When the current zone is the goal zone, I add the current Path constructed to the total list of possible paths.<br><br>
+  I used a combination of Dijkstra algorithm and Yen's K shortest path algorithm.<br>
+  The Dijkstra algorithm searches for the lowest cost path it can find (just like a BFS but with a priority queue implemented), while the Yen's K algorithm repeats the Dijkstra until K best paths are obtained or no more paths are found.<br>
+  I start with all of my zones unblocked and then I add the zones and corresponding connections to a list of blocked zones, so that the Dijkstra doesn't find the same path each time.<br>
+  I used heapq instead of lists to be able to push and pop the paths and have them organized by cost instead of arrival.<br>
 
   **Drone Routing:**
 
