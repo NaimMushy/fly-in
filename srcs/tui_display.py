@@ -1014,7 +1014,26 @@ class TuiDisplay:
             "     ➤ i: TOGGLE INFO MODE "
             f"({'off' if info_mode == 0 else 'on'})"
         )
+        print("     ➤ m: DISPLAY AVAILABLE MAP PATHS")
         print("     ➤ q: QUIT PROGRAM")
+
+    @staticmethod
+    def display_maps(maps: dict[str, list[str]]) -> None:
+
+        print("\n✦ MAPS AVAILABLE ✦\n")
+
+        for map_type, map_path in maps.items():
+
+            print(f" ➤ {map_type.upper()}:\n")
+
+            for m in map_path:
+
+                print(f" - {'maps/' + map_type + '/' + m + '.txt'}")
+
+            print()
+
+        time.sleep(1)
+        input("Press any key to continue...\n")
 
     @staticmethod
     def display_state(state: State, nb_turns: int) -> None:

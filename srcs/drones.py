@@ -76,7 +76,7 @@ class Drone:
 
         if self.is_next_step_accessible(self.path_to_follow):
 
-            print(f"drone {self.id} can move to next zone {self.next_zone.name}")
+            # print(f"drone {self.id} can move to next zone {self.next_zone.name}")
             self.waiting = False
 
             for occup in self.occupying:
@@ -116,7 +116,7 @@ class Drone:
 
         else:
 
-            print(f"drone {self.id} has to wait a turn")
+            # print(f"drone {self.id} has to wait a turn")
             self.waiting = True
 
     def is_next_step_accessible(self, path: Path) -> bool:
@@ -158,7 +158,7 @@ class Drone:
             return True
 
         next_step: Zone = path.path[0]
-        print(f"drone {self.id} : next step = {next_step.name}")
+        # print(f"drone {self.id} : next step = {next_step.name}")
         connection: Connection = next_step.connections[self.current_zone.name]
         ns_sp_rem: int = next_step.max_drones - len(
             next_step.occupied
@@ -169,27 +169,28 @@ class Drone:
 
         if con_sp_rem == 0:
 
-            print(f"drone {self.id}, no space remaining in connection {connection.name}, next step: {next_step.name}")
-            if next_step.zone_type == "restricted":
-
-                print(f"connection occupied : {[do.id for do in connection.occupied]}\n")
-                print(f"connection wish to occupy : {[d.id for d in connection.wish_to_occupy]}\n")
-                print(f"connection free spaces : {connection.free_spaces()}\n")
-                print(f"connection drones allowed : {[dr.id for dr in connection.wish_to_occupy[:connection.free_spaces()]]}\n")
-                if (
-                    len(connection.wish_to_occupy) < connection.free_spaces()
-                    or self in connection.wish_to_occupy[
-                        :connection.free_spaces()
-                    ]
-                ):
-                    print(f"drone {self.id} can go through the connection")
-                    return True
-
-            return connection.is_accessible(self.id)
+#             print(f"drone {self.id}, no space remaining in connection {connection.name}, next step: {next_step.name}")
+#             if next_step.zone_type == "restricted":
+# 
+#                 print(f"connection occupied : {[do.id for do in connection.occupied]}\n")
+#                 print(f"connection wish to occupy : {[d.id for d in connection.wish_to_occupy]}\n")
+#                 print(f"connection free spaces : {connection.free_spaces()}\n")
+#                 print(f"connection drones allowed : {[dr.id for dr in connection.wish_to_occupy[:connection.free_spaces()]]}\n")
+#                 if (
+#                     len(connection.wish_to_occupy) < connection.free_spaces()
+#                     or self in connection.wish_to_occupy[
+#                         :connection.free_spaces()
+#                     ]
+#                 ):
+#                     print(f"drone {self.id} can go through the connection")
+#                     return True
+# 
+#             return connection.is_accessible(self.id)
+            return False
 
         if ns_sp_rem == 0:
 
-            print(f"drone {self.id}, no space remaining in zone {next_step.name}")
+            # print(f"drone {self.id}, no space remaining in zone {next_step.name}")
             if next_step.zone_type == "restricted":
 
                 if (
@@ -198,10 +199,11 @@ class Drone:
                         :next_step.free_spaces()
                     ]
                 ):
-                    print(f"drone {self.id} can go through the connection")
+                    # print(f"drone {self.id} can go through the connection")
                     return True
 
-            return next_step.is_accessible(self.id)
+            # return next_step.is_accessible(self.id)
+            return False
 
         return (
             connection.is_accessible(self.id)
@@ -234,7 +236,7 @@ class Drone:
         """
 
         if isinstance(self.current_zone, Connection):
-            print(f"first step: {self.path_to_follow.path[0].name}")
+            # print(f"first step: {self.path_to_follow.path[0].name}")
             return
 
         self.free_connections()
@@ -264,7 +266,7 @@ class Drone:
 
             if not self.is_next_step_accessible(path):
 
-                print(f"next step is not accessible for drone {self.id}\n")
+                # print(f"next step is not accessible for drone {self.id}\n")
                 if not path.path[0].connections[
                     self.current_zone.name
                 ].is_accessible(self.id):
@@ -277,7 +279,7 @@ class Drone:
 
                     path.cost += path.path[0].calculate_wait_cost(self.id)
 
-                print(f"new cost of path : {path.cost}\n")
+                # print(f"new cost of path : {path.cost}\n")
 
             if path.path[0].zone_type == "priority":
                 path.priority = True
@@ -367,12 +369,12 @@ class DroneMonitor:
     ) -> None:
 
         if current_drone in updated_drones:
-            print(f"drone {current_drone.id} has already been updated!")
+            # print(f"drone {current_drone.id} has already been updated!")
             return
 
-        print(f"reevaluating path for drone {current_drone.id}...\n")
+        # print(f"reevaluating path for drone {current_drone.id}...\n")
         current_drone.reevaluate_drone_path(self.path_cache)
-        print("finished reevaluating path!")
+        # print("finished reevaluating path!")
 
         if hasattr(current_drone, "next_zone"):
 
@@ -408,13 +410,13 @@ class DroneMonitor:
 
                     if neighbor_drone == current_drone:
                         continue
-                    print(f"drone {current_drone.id} is trying to update neighbor {neighbor_drone.id}")
+                    # print(f"drone {current_drone.id} is trying to update neighbor {neighbor_drone.id}")
                     self.recursive_path_update(neighbor_drone, updated_drones)
 
         current_drone.reevaluate_drone_path(self.path_cache)
         current_drone.update_intent()
         updated_drones.add(current_drone)
-        print(f"adding drone {current_drone.id} to the updated drones after intent\n")
+        # print(f"adding drone {current_drone.id} to the updated drones after intent\n")
 
     def recursive_action_update(
         self,
@@ -423,7 +425,7 @@ class DroneMonitor:
     ) -> None:
 
         if current_drone in updated_drones:
-            print(f"drone {current_drone.id} has already been updated!")
+            # print(f"drone {current_drone.id} has already been updated!")
             return
 
         if hasattr(current_drone, "next_zone"):
@@ -447,7 +449,7 @@ class DroneMonitor:
                 to_explore = current_drone.next_zone.connections[
                     current_drone.current_zone.name
                 ]
-                print(f"drone {current_drone.id} is trying to explore connection {to_explore.name}")
+                # print(f"drone {current_drone.id} is trying to explore connection {to_explore.name}")
 
             elif (
                 len(current_drone.next_zone.occupied) > 0
@@ -461,7 +463,7 @@ class DroneMonitor:
 
                     if neighbor_drone == current_drone:
                         continue
-                    print(f"drone {current_drone.id} is trying to update neighbor {neighbor_drone.id}")
+                    # print(f"drone {current_drone.id} is trying to update neighbor {neighbor_drone.id}")
                     self.recursive_action_update(neighbor_drone, updated_drones)
 
         current_drone.turn_action()
@@ -484,12 +486,12 @@ class DroneMonitor:
         """
 
         self.path_cache: dict[str, list[Path]] = {}
-        print("\n==== PATH UPDATE ====\n")
+        # print("\n==== PATH UPDATE ====\n")
         updated_drones: set[Drone] = set()
         for drone in self.drones:
             self.recursive_path_update(drone, updated_drones)
 
-        print("\n==== ACTION UPDATE ====\n")
+        # print("\n==== ACTION UPDATE ====\n")
         updated_drones = set()
         for drone in self.drones:
             self.recursive_action_update(drone, updated_drones)

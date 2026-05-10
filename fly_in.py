@@ -7,6 +7,16 @@ from srcs import MapParser, Map, Path, PathFinder, DroneMonitor, TuiDisplay, Sta
 DEFAULT_MAP: str = "maps/easy/01_linear_path.txt"
 
 
+MAPS: dict[str, list[str]] = {
+    "easy": ["01_linear_path", "02_simple_fork", "03_basic_capacity"],
+    "medium": ["01_dead_end_trap", "02_circular_loop", "03_priority_puzzle"],
+    "hard": [
+        "01_maze_nightmare", "02_capacity_hell", "03_the_ultimate_challenge"
+    ],
+    "challenger": ["01_the_impossible_dream"]
+}
+
+
 def main() -> None:
 
     """
@@ -42,7 +52,7 @@ def main() -> None:
 
             user_input = input()
 
-            while user_input not in ["s", "i", "q", "l"] and user_input:
+            while user_input not in ["s", "i", "q", "l", "m"] and user_input:
                 print("Invalid command!")
                 time.sleep(0.4)
                 os.system('clear')
@@ -60,6 +70,10 @@ def main() -> None:
                     "information mode!"
                 )
                 time.sleep(1)
+
+            elif user_input == "m":
+                os.system('clear')
+                TuiDisplay.display_maps(MAPS)
 
             elif user_input == "l":
                 os.system('clear')
