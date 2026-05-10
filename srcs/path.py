@@ -1,4 +1,5 @@
-from .zones import Zone, Connection
+import heapq
+from .zones import Zone
 from .state import Char
 
 
@@ -54,7 +55,7 @@ class PathFinder:
 
         while stack:
 
-            cost, _, is_priority, zone, path = stack.pop()
+            cost, _, is_priority, zone, path = heapq.heappop(stack)
 
             if zone.name in best_cost.keys() and best_cost[zone.name] < cost:
                 continue
@@ -88,7 +89,7 @@ class PathFinder:
                     is_priority or neighbor.zone_type == "priority"
                 )
                 unique += 1
-                stack.append((
+                heapq.heappush(stack, (
                     cost + cost_to_add,
                     unique,
                     new_priority,
@@ -135,11 +136,11 @@ class PathFinder:
             return []
 
         best_paths: list[Path] = [first_path]
-        potential_paths: list[tuple[int, int, Path]] = []
         unique: int = 0
 
         for path_n in range(1, nb_paths):
 
+            potential_paths: list[tuple[int, int, Path]] = []
             previous_path: Path = best_paths[path_n - 1]
 
             for node_id in range(len(previous_path.path) - 1):
@@ -150,6 +151,13 @@ class PathFinder:
                 blocked_zones: set[str] = {
                     node.name for node in root_path[:-1]
                 }
+                for previous in best_paths:
+
+                    if (
+                        len(previous.path) > node_id + 1
+                        and previous.path[:node_id + 1] == root_path
+                    ):
+                        blocked_zones.add(previous.path[node_id + 1].name)
 
                 root_cost: int = 0
 
@@ -176,7 +184,7 @@ class PathFinder:
                         for _, _, potential_path in potential_paths
                     ):
                         unique += 1
-                        potential_paths.append((
+                        heapq.heappush(potential_paths, (
                             cur_path.cost,
                             unique,
                             cur_path
@@ -185,9 +193,12 @@ class PathFinder:
             if not potential_paths:
                 break
 
-            _, _, next_best = potential_paths.pop()
+            _, _, next_best = heapq.heappop(potential_paths)
             best_paths.append(next_best)
 
+#         print(f"paths found: {len(best_paths)}\n")
+#         for p in best_paths:
+#             print(f" -> {[z.name for z in p.path]}\n")
         return best_paths
 
 #         possible_paths: list[Path] = []

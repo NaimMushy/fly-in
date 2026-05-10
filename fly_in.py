@@ -139,14 +139,14 @@ def launch_drones(
             d.id for d in drone_map.start_hub.occupied
         ]
         cur_states: list[State] = [new_state]
-        # turn_count: int = 1
+        turn_count: int = 1
 
         while drone_monitor.drones:
 
-            # print(f"\n==== TURN {turn_count} ====\n\n")
+            print(f"\n==== TURN {turn_count} ====\n\n")
             new_state = State(info_mode, tui_display.console)
             drone_monitor.update_drones(new_state)
-            # print("updated drones!")
+            print("updated drones!")
             new_state.display_map = tui_display.map_updated((
                 []
                 if drone_map.end_hub.name
@@ -154,7 +154,7 @@ def launch_drones(
                 else new_state.zones_occupied[drone_map.end_hub.name]
             ))
             cur_states.append(new_state)
-            # turn_count += 1
+            turn_count += 1
 
         if map_file not in states.keys():
             states[map_file] = []

@@ -550,7 +550,7 @@ class DisplayZone:
 
         for drone in occupying:
 
-            if drone_c >= self.col + self.size * 2 - 2:
+            if drone_c + 1 + len(str(drone)) > self.col + self.size * 2 - 1:
                 drone_r += 1
                 drone_c = self.col + 1
 
@@ -582,7 +582,7 @@ class DisplayZone:
             lines[con_r][con_c].connection_char = CHARACTERS["connection"]
             lines[con_r][con_c].style = self.color
 
-            for c in str(con_drone):
+            for _ in str(con_drone):
 
                 con_c += 1
 
@@ -638,15 +638,15 @@ class DisplayZone:
                 lines[row][col].char = c
                 lines[row][col].style = self.color + " blink"
 
-        for con_drone, con_row, con_col, p_name in self.con_drones:
+        for con_drone, con_row, con_col, _ in self.con_drones:
 
             lines[con_row][con_col].connection_char = CHARACTERS["drone"]
             lines[con_row][con_col].style = self.color + " blink"
 
-            for con_c in str(con_drone):
+            for c in str(con_drone):
 
                 con_col += 1
-                lines[con_row][con_col].char = con_c
+                lines[con_row][con_col].connection_char = c
                 lines[con_row][con_col].style = self.color + " blink"
 
     @staticmethod
