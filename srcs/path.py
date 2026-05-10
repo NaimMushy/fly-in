@@ -196,9 +196,11 @@ class PathFinder:
             _, _, next_best = heapq.heappop(potential_paths)
             best_paths.append(next_best)
 
-#         print(f"paths found: {len(best_paths)}\n")
+#         print(f"\n\n\n ================== paths found: {len(best_paths)}===========================\n")
 #         for p in best_paths:
 #             print(f" -> {[z.name for z in p.path]}\n")
+#             print(f"cost : {p.cost}\n")
+#         print("\n\n")
         return best_paths
 
 #         possible_paths: list[Path] = []

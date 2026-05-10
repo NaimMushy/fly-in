@@ -169,24 +169,24 @@ class Drone:
 
         if con_sp_rem == 0:
 
-#             print(f"drone {self.id}, no space remaining in connection {connection.name}, next step: {next_step.name}")
-#             if next_step.zone_type == "restricted":
-# 
+            # print(f"drone {self.id}, no space remaining in connection {connection.name}, next step: {next_step.name}")
+            if next_step.zone_type == "restricted":
+
 #                 print(f"connection occupied : {[do.id for do in connection.occupied]}\n")
 #                 print(f"connection wish to occupy : {[d.id for d in connection.wish_to_occupy]}\n")
 #                 print(f"connection free spaces : {connection.free_spaces()}\n")
 #                 print(f"connection drones allowed : {[dr.id for dr in connection.wish_to_occupy[:connection.free_spaces()]]}\n")
-#                 if (
-#                     len(connection.wish_to_occupy) < connection.free_spaces()
-#                     or self in connection.wish_to_occupy[
-#                         :connection.free_spaces()
-#                     ]
-#                 ):
-#                     print(f"drone {self.id} can go through the connection")
-#                     return True
-# 
-#             return connection.is_accessible(self.id)
-            return False
+                if (
+                    len(connection.wish_to_occupy) < connection.free_spaces()
+                    or self in connection.wish_to_occupy[
+                        :connection.free_spaces()
+                    ]
+                ):
+                    # print(f"drone {self.id} can go through the connection")
+                    return True
+
+            return connection.is_accessible(self.id)
+            # return False
 
         if ns_sp_rem == 0:
 
@@ -202,8 +202,8 @@ class Drone:
                     # print(f"drone {self.id} can go through the connection")
                     return True
 
-            # return next_step.is_accessible(self.id)
-            return False
+            return next_step.is_accessible(self.id)
+            # return False
 
         return (
             connection.is_accessible(self.id)
@@ -491,7 +491,15 @@ class DroneMonitor:
         for drone in self.drones:
             self.recursive_path_update(drone, updated_drones)
 
-        # print("\n==== ACTION UPDATE ====\n")
+#         print("\n==== ALL PATHS ====\n")
+#         for drone in self.drones:
+#             print(f"drone {drone.id} path:", end="")
+#             for z in drone.path_to_follow.path:
+#                 print(f" {z.name}", end="")
+#             print(f"path cost : {drone.path_to_follow.cost}")
+#             print()
+# 
+#         print("\n==== ACTION UPDATE ====\n")
         updated_drones = set()
         for drone in self.drones:
             self.recursive_action_update(drone, updated_drones)

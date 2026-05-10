@@ -57,11 +57,11 @@ class Connection(BaseModel):
         """
 
         if not self.occupied:
-            return self.max_link_capacity
+            return 0
 
         return len([
             drone for drone in self.occupied
-            if drone.is_next_step_accessible(drone.path_to_follow)
+            if drone.current_zone != self
         ])
 
     def calculate_wait_cost(self, drone_id: int) -> int:
@@ -246,7 +246,7 @@ class Zone(BaseModel):
         """
 
         if not self.occupied:
-            return self.max_drones
+            return 0
 
         return len([
             drone for drone in self.occupied

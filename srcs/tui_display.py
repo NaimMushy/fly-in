@@ -1018,7 +1018,7 @@ class TuiDisplay:
         print("     ➤ q: QUIT PROGRAM")
 
     @staticmethod
-    def display_maps(maps: dict[str, list[str]]) -> None:
+    def display_maps(maps: dict[str, list[str]], map_dir: str) -> None:
 
         print("\n✦ MAPS AVAILABLE ✦\n")
 
@@ -1028,7 +1028,7 @@ class TuiDisplay:
 
             for m in map_path:
 
-                print(f" - {'maps/' + map_type + '/' + m + '.txt'}")
+                print(f" - {map_dir + '/' + map_type + '/' + m + '.txt'}")
 
             print()
 

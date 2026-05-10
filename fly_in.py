@@ -7,12 +7,13 @@ from srcs import MapParser, Map, Path, PathFinder, DroneMonitor, TuiDisplay, Sta
 DEFAULT_MAP: str = "maps/easy/01_linear_path.txt"
 
 
+MAP_DIR: str = "maps"
+
+
 MAPS: dict[str, list[str]] = {
     "easy": ["01_linear_path", "02_simple_fork", "03_basic_capacity"],
     "medium": ["01_dead_end_trap", "02_circular_loop", "03_priority_puzzle"],
-    "hard": [
-        "01_maze_nightmare", "02_capacity_hell", "03_the_ultimate_challenge"
-    ],
+    "hard": ["01_maze_nightmare", "02_capacity_hell", "03_ultimate_challenge"],
     "challenger": ["01_the_impossible_dream"]
 }
 
@@ -73,7 +74,7 @@ def main() -> None:
 
             elif user_input == "m":
                 os.system('clear')
-                TuiDisplay.display_maps(MAPS)
+                TuiDisplay.display_maps(MAPS, MAP_DIR)
 
             elif user_input == "l":
                 os.system('clear')
@@ -153,14 +154,14 @@ def launch_drones(
             d.id for d in drone_map.start_hub.occupied
         ]
         cur_states: list[State] = [new_state]
-        turn_count: int = 1
+        # turn_count: int = 1
 
         while drone_monitor.drones:
 
-            print(f"\n==== TURN {turn_count} ====\n\n")
+            # print(f"\n==== TURN {turn_count} ====\n\n")
             new_state = State(info_mode, tui_display.console)
             drone_monitor.update_drones(new_state)
-            print("updated drones!")
+            # print("updated drones!")
             new_state.display_map = tui_display.map_updated((
                 []
                 if drone_map.end_hub.name
@@ -168,7 +169,7 @@ def launch_drones(
                 else new_state.zones_occupied[drone_map.end_hub.name]
             ))
             cur_states.append(new_state)
-            turn_count += 1
+            # turn_count += 1
 
         if map_file not in states.keys():
             states[map_file] = []
