@@ -621,7 +621,7 @@ class MapParser:
                         "Color for the zone is already defined"
                     )
 
-                if not match.group(1).isalnum():
+                if not match.group(2).isalnum():
 
                     raise ValueError(
                         f"Color {match.group(1)} is an invalid color"
