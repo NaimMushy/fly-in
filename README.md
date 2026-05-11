@@ -128,9 +128,17 @@
   **Pathfinding Algorithm:**
 
   I used a combination of Dijkstra algorithm and Yen's K shortest path algorithm.<br>
-  The Dijkstra algorithm searches for the lowest cost path it can find (just like a BFS but with a priority queue implemented), while the Yen's K algorithm repeats the Dijkstra until K best paths are obtained or no more paths are found.<br>
-  I start with all of my zones unblocked and then I add the zones and corresponding connections to a list of blocked zones, so that the Dijkstra doesn't find the same path each time.<br>
-  I used heapq instead of lists to be able to push and pop the paths and have them organized by cost instead of arrival.<br>
+  The Dijkstra algorithm searches for the lowest cost path it can find (just like a BFS but with a priority queue implemented), while the Yen's K algorithm repeats the Dijkstra until K best paths are obtained or no more paths are found.<br><br>
+  The Dijkstra algorithm starts from a given zone, with a priority queue containing only that zone.<br>
+  Then, it iteratively takes the path with the lowest cost in the stack and the zone associated with it and explores all neighboring zones of the current zone, adding them to the stack with the corresponding path (if they were not already in the stack with a lower path cost).<br>
+  When the destination is found or there are no more zones in the stack (no path available), the algorithm returns the best path it found.<br>
+  I used heapq instead of lists because it ensures my paths are stored and retrieved by cost instead of arrival.<br><br>
+  For Yen's K shortest path algorithm, the main idea is to build a list of the best paths found so far, and a set of potential paths.<br>
+  Initially, the best paths contain only the absolute shortest path.<br>
+  For each iteration (from 1 to K), I examine each path and generate new potential paths by deviating from the current path at each node except the destination.<br>
+  The deviation is done by establishing a root path (the current path until the current node) and computing the shortest path from that node to the destination while temporarily removing zones that would cause a loop or duplicate a previously found path.<br><br>
+  Using the two in tandem allows me to find at most the 5 (default) best alternatives for each drone, so that they can follow the proper path, but without having to calculate **every** path that exists (that makes the program too slow).<br><br>
+  
 
   **Drone Routing:**
 
