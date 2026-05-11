@@ -3,9 +3,17 @@
 
 # ==== FLY-IN ====
 
+## Table of contents
 
-<details>
-  <summary><h3>Description</h3></summary>
+  1. [Description](#description)
+  2. [Instructions](#instructions)
+  3. [Resources](#resources)
+  4. [Algorithm](#algorithm)
+  5. [Visual Representation](#visual-representation)<br><br>
+
+
+
+### Description
 
 
   ____
@@ -20,10 +28,10 @@
   The simulation stops when all the drones have reached the end zone, all the while trying to achieve a minimal number of turns.<br><br>
   A visualization of the simulation step by step is provided with a terminal display, offering user interaction through small menus and commands.<br>
   
-</details>
 
-<details>
-  <summary><h3>Instructions</h3></summary>
+
+
+### Instructions
 
 
   ____
@@ -93,9 +101,8 @@
   
     If the current state of the simulation is the last one, meaning all the drones have been delivered, going to the next step of the simulation will end the simulation and return to the start menu.<br>
 
-</details>
-<details>
-  <summary><h3>Resources</h3></summary>
+
+### Resources
 
 
   ____
@@ -117,10 +124,8 @@
   
   I asked ChatGPT for some help regarding some issues with the terminal display as well as for debugging.<br>
 
-</details>
 
-<details>
-  <summary><h3>Algorithm</h3></summary>
+  ### Algorithm
 
 
   ____
@@ -152,9 +157,8 @@
   At first, I struggled to form lines that seemed okay, then I decided to calculate a path of coordinates using a simple and efficient algorithm I was familiar with.<br>
   The result is pretty acceptable, becoming a bit jumbled when there are too many connections as they can overlap each other, but I didn't find a better way to do it in the terminal interface.<br><br>
 
-</details>
-<details>
-  <summary><h3>Visual Representation</h3></summary>
+
+### Visual Representation
 
 
   ____
@@ -168,4 +172,3 @@
   To avoid having to calculate again if the same map is launched more than once, I defined State objects that contain all the information relevant to a certain simulation and each of its steps.<br>
   That way, I can simply display the required states for the simulation if they have already been created.<br><br>
   What's more, with the information mode enabled, the type of the zone is displayed on the top border, and additional information regarding the drones and zones is printed at the end of a turn.<br><br>
-</details>
