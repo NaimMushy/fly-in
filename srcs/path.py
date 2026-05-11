@@ -154,7 +154,12 @@ class PathFinder:
         if start == dest:
             return [Path([start], 0)]
 
-        first_path: Path = PathFinder.custom_dijkstra(start, dest, set(), [])
+        first_path: Path | None = PathFinder.custom_dijkstra(
+            start,
+            dest,
+            set(),
+            []
+        )
         if not first_path:
             return []
 
@@ -191,7 +196,7 @@ class PathFinder:
                         else 1
                     )
 
-                cur_path: list[Path] = PathFinder.custom_dijkstra(
+                cur_path: Path | None = PathFinder.custom_dijkstra(
                     cur_node,
                     dest,
                     blocked_zones,
@@ -219,154 +224,7 @@ class PathFinder:
             _, _, next_best = heapq.heappop(potential_paths)
             best_paths.append(next_best)
 
-#         print(f"\n\n\n ================== paths found: {len(best_paths)}===========================\n")
-#         for p in best_paths:
-#             print(f" -> {[z.name for z in p.path]}\n")
-#             print(f"cost : {p.cost}\n")
-#         print("\n\n")
         return best_paths
-
-#         possible_paths: list[Path] = []
-#         stack: list[tuple[Zone, Connection | None, int, list[Zone]]] = [
-#             (start, None, 0, [])
-#         ]
-#         cur_hub: Zone
-#         cur_con: Connection | None
-#         cur_cost: int
-#         cur_path: list[Zone]
-# 
-#         while stack:
-# 
-#             cur_hub, cur_con, cur_cost, cur_path = stack.pop()
-# 
-#             if (
-#                 cur_hub.zone_type == "blocked"
-#                 or cur_hub.max_drones == 0
-#                 or (cur_con and cur_con.max_link_capacity == 0)
-#             ):
-#                 continue
-# 
-#             new_path: list[Zone] = cur_path + [cur_hub]
-# 
-#             if cur_hub == dest:
-#                 possible_paths.append(Path(new_path, cur_cost))
-#                 continue
-# 
-#             for branch in cur_hub.connections.values():
-# 
-#                 neighbor: Zone = (
-#                     branch.zone2 if cur_hub == branch.zone1
-#                     else branch.zone1
-#                 )
-# 
-#                 if neighbor not in new_path:
-#                     cost_to_add: int = (2 if neighbor.zone_type == "restricted" else 1)
-#                     stack.append((neighbor, branch, cur_cost + cost_to_add, new_path))
-
-#         print(f"number of paths found: {len(possible_paths)}\n")
-#         print("paths found:\n")
-#         for path in possible_paths:
-#             print(f"-> {[z.name for z in path.path]}, cost = {path.cost}\n")
-#         return possible_paths
-#         if start == dest:
-#             return [Path([start], 1)]
-#         current_hub: Zone = start
-#         current_con: Connection | None = None
-#         possible_paths: list[Path] = []
-#         current_path: list[tuple[Zone, Connection | None]] = []
-#         paths_refused: list[list[tuple[Zone, Connection | None]]] = []
-#         current_cost: int = 0
-#         found: bool = False
-# 
-#         while True:
-# 
-#             if (
-#                 current_hub.zone_type == "blocked"
-#                 or current_hub.max_drones == 0
-#                 or (current_con and current_con.max_link_capacity == 0)
-#             ):
-#                 if not current_path:
-#                     break
-#                 if current_path + [(current_hub, current_con, current_cost)] not in paths_refused:
-#                     paths_refused.append([z_c for z_c in current_path] + [(current_hub, current_con, current_cost)])
-#                 current_hub, current_con, current_cost = current_path.pop()
-# 
-#             else:
-#                 current_path.append((current_hub, current_con, current_cost))
-#                 print(f"adding hub {current_hub.name} to current path\n")
-# 
-#                 if current_hub == dest:
-#                     print("found destination!\n")
-#                     possible_paths.append(Path([
-#                         z for z, c, cost in current_path
-#                     ], current_cost))
-#                     current_path.pop()
-#                     if not current_path:
-#                         break
-#                     current_hub, current_con, current_cost = current_path.pop()
-# 
-#                 else:
-#                     found = False
-#                     print(f"exploring all connections of hub {current_hub.name}\n")
-#                     for branch in current_hub.connections.values():
-# 
-#                         neighbor: Zone = (
-#                             branch.zone2 if current_hub == branch.zone1
-#                             else branch.zone1
-#                         )
-#                         cost_to_add: int = (2 if neighbor.zone_type == "restricted" else 1)
-#                         print(f"found neighbor {neighbor.name}\n")
-# 
-#                         # print("paths refused until now:\n")
-#                         # for p_r in paths_refused:
-#                         #     print(f"- {[zone.name for zone, con, cost in p_r]}\n")
-#                         if neighbor in [zone for zone, con, cost in current_path]:
-#                             print("neighbor already in current path\n")
-#                             continue
-# 
-#                         if current_path + [(neighbor, branch, current_cost + cost_to_add)] in paths_refused:
-#                             print("neighbor is in a refused path\n")
-#                             continue
-# 
-#                         if not possible_paths:
-#                             already_exists: bool = False
-#                         else:
-#                             already_exists = True
-#                         for path in possible_paths:
-# 
-#                             already_exists = True
-#                             if len(path.path) < len(current_path) + 1:
-#                                 continue
-#                             for z in range(len(current_path) + 1):
-# 
-#                                 if path.path[z] != ([
-#                                     zone for zone, con, cost in current_path
-#                                 ] + [neighbor])[z]:
-#                                     already_exists = False
-#                                     break
-# 
-#                             if already_exists:
-#                                 print("path already exists\n")
-#                                 break
-# 
-#                         if not already_exists:
-#                             current_hub = neighbor
-#                             current_con = branch
-#                             current_cost += cost_to_add
-#                             found = True
-#                             break
-# 
-#                     if not found:
-#                         print("found no neighbor, adding current path to refused paths\n")
-#                         if current_path not in paths_refused:
-#                             paths_refused.append([z_c for z_c in current_path])
-#                         if not current_path:
-#                             break
-# 
-#                         current_path.pop()
-#                         if not current_path:
-#                             break
-#                         current_hub, current_con, current_cost = current_path.pop()
 
     @staticmethod
     def find_valid_neighbors(

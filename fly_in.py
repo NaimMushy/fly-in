@@ -1,7 +1,7 @@
 import sys
 import os
 import time
-from srcs import MapParser, Map, Path, PathFinder, DroneMonitor, TuiDisplay, State
+from srcs import MapParser, Map, PathFinder, DroneMonitor, TuiDisplay, State
 
 
 DEFAULT_MAP: str = "maps/easy/01_linear_path.txt"
@@ -154,14 +154,11 @@ def launch_drones(
             d.id for d in drone_map.start_hub.occupied
         ]
         cur_states: list[State] = [new_state]
-        # turn_count: int = 1
 
         while drone_monitor.drones:
 
-            # print(f"\n==== TURN {turn_count} ====\n\n")
             new_state = State(info_mode, tui_display.console)
             drone_monitor.update_drones(new_state)
-            # print("updated drones!")
             new_state.display_map = tui_display.map_updated((
                 []
                 if drone_map.end_hub.name
@@ -169,7 +166,6 @@ def launch_drones(
                 else new_state.zones_occupied[drone_map.end_hub.name]
             ))
             cur_states.append(new_state)
-            # turn_count += 1
 
         if map_file not in states.keys():
             states[map_file] = []
