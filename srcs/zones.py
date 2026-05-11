@@ -91,9 +91,12 @@ class Connection(BaseModel):
                 break
             cost += 1
 
-        return abs(
-            cost - (self.max_link_capacity - len(self.occupied))
-        ) - self.free_spaces()
+        return max(
+            0,
+            abs(
+                cost - (self.max_link_capacity - len(self.occupied))
+            ) - self.free_spaces()
+        )
 
     def is_accessible(self, drone_id: int) -> bool:
 
@@ -281,9 +284,12 @@ class Zone(BaseModel):
 
             cost += 1
 
-        return abs(
-            cost - (self.max_drones - len(self.occupied))
-        ) - self.free_spaces()
+        return max(
+            0,
+            abs(
+                cost - (self.max_drones - len(self.occupied))
+            ) - self.free_spaces()
+        )
 
     def is_accessible(self, drone_id: int) -> bool:
 

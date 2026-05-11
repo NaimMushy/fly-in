@@ -75,6 +75,7 @@ class Drone:
 
         if self.is_next_step_accessible(self.path_to_follow):
 
+            # print(f"drone {self.id} can move to next zone\n")
             self.waiting = False
 
             for occup in self.occupying:
@@ -114,6 +115,7 @@ class Drone:
 
         else:
 
+            # print(f"drone {self.id} has to wait a turn\n")
             self.waiting = True
 
     def is_next_step_accessible(self, path: Path) -> bool:
@@ -165,6 +167,7 @@ class Drone:
 
         if con_sp_rem == 0:
 
+            # print(f"no spaces remaining in connection {connection.name} for drone {self.id}\n")
             if next_step.zone_type == "restricted":
 
                 if (
@@ -179,6 +182,7 @@ class Drone:
 
         if ns_sp_rem == 0:
 
+            # print(f"no spaces remaining in zone {next_step.name} for drone {self.id}\n")
             if next_step.zone_type == "restricted":
 
                 if (
@@ -191,6 +195,7 @@ class Drone:
 
             return next_step.is_accessible(self.id)
 
+        # print(f"connection accessible: {connection.is_accessible(self.id)}, zone accessible: {next_step.is_accessible(self.id)} for drone {self.id}\n")
         return (
             connection.is_accessible(self.id)
             and next_step.is_accessible(self.id)
@@ -243,7 +248,7 @@ class Drone:
 
         for path in possible_paths:
 
-            if len(path.path) > 1:
+            if path.path[0] == self.current_zone:
                 path.path = path.path[1:]
 
             if not self.is_next_step_accessible(path):
@@ -252,12 +257,19 @@ class Drone:
                     self.current_zone.name
                 ].is_accessible(self.id):
 
+                    # print(f"connection {path.path[0].connections[self.current_zone.name].name} is not accessible for drone {self.id}! added cost: {path.path[0].connections[self.current_zone.name].calculate_wait_cost(self.id)}\n")
+                    # print(f"connection occupied : {len(path.path[0].connections[self.current_zone.name].occupied)}")
+                    # print("connection wish to occupy:", end="")
+                    # for wto in path.path[0].connections[self.current_zone.name].wish_to_occupy:
+                    #     print(f" {wto.id}", end="")
+                    # print("\n")
                     path.cost += path.path[0].connections[
                         self.current_zone.name
                     ].calculate_wait_cost(self.id)
 
                 elif not path.path[0].is_accessible(self.id):
 
+                    # print(f"zone {path.path[0].name} is not accessible for drone {self.id}! added cost: {path.path[0].calculate_wait_cost(self.id)}\n")
                     path.cost += path.path[0].calculate_wait_cost(self.id)
 
             if path.path[0].zone_type == "priority":
@@ -335,137 +347,180 @@ class DroneMonitor:
             // self.drone_map.nb_drones
         )
 
-    def recursive_path_update(
-        self,
-        current_drone: Drone,
-        updated_drones: set[Drone]
-    ) -> None:
+    def update_order(self) -> list[Drone]:
 
         """
 
-        Recursively reevaluate paths for each drone,
+        Calculates the order in which the drones
+        should be updated to avoid circular dependency
+        for zone occupation or inefficient waiting.
+
+        Returns
+        -------
+        list[Drone]
+            The ordered drones for the monitor's updating.
+
+        """
+
+        visited_drones: set[Drone] = set()
+        stack_occupancy: set[Drone] = set()
+        order: list[Drone] = []
+
+        for start_drone in self.drones:
+
+            if start_drone in visited_drones:
+                continue
+
+            drone_stack: list[Drone] = [start_drone]
+
+            while drone_stack:
+
+                cur_drone: Drone = drone_stack[-1]
+
+                if cur_drone in visited_drones:
+                    drone_stack.pop()
+                    continue
+
+                if cur_drone not in stack_occupancy:
+
+                    stack_occupancy.add(cur_drone)
+
+                    to_explore: None | Zone | Connection = (
+                        self.get_dependency(cur_drone)
+                    )
+
+                    if to_explore:
+
+                        for neighbor in to_explore.occupied:
+
+                            if (
+                                neighbor == cur_drone
+                                or neighbor in visited_drones
+                            ):
+                                continue
+
+                            drone_stack.append(neighbor)
+
+                else:
+
+                    drone_stack.pop()
+                    stack_occupancy.discard(cur_drone)
+                    order.append(cur_drone)
+                    visited_drones.add(cur_drone)
+
+        return order
+
+    def path_update(self) -> None:
+
+        """
+
+        Reevaluate paths for each drone,
         making sure the drones are updated in order of zone occupancy
         so that a drone can evaluate path cost correctly.
 
-        Parameters
-        ----------
-        current_drone: Drone
-            The current drone to update.
-        updated_drones: list[Drone]
-            The list of drones that were already updated.
+        """
+
+        for d in self.drones:
+            d.reevaluate_drone_path(self.path_cache)
+            d.update_intent()
+
+        ordered_drones: list[Drone] = self.update_order()
+        updated: set[Drone] = set()
+
+        for drone in ordered_drones:
+
+            if drone in updated:
+                continue
+
+            drone.reevaluate_drone_path(self.path_cache)
+            drone.update_intent()
+            updated.add(drone)
+            # print(f"updated path for drone {drone.id}\n")
+
+        for check_drone in self.drones:
+
+            if check_drone not in updated:
+
+                check_drone.reevaluate_drone_path(self.path_cache)
+                check_drone.update_intent()
+                # print(f"updated path for drone {check_drone.id}\n")
+
+    def action_update(self) -> None:
 
         """
 
-        if current_drone in updated_drones:
-            return
-
-        current_drone.reevaluate_drone_path(self.path_cache)
-
-        if hasattr(current_drone, "next_zone"):
-
-            to_explore: Zone | Connection | None = None
-
-            if (
-                current_drone.next_zone.zone_type == "restricted"
-                and not isinstance(current_drone.current_zone, Connection)
-                and (
-                    len(current_drone.next_zone.connections[
-                        current_drone.current_zone.name
-                    ].occupied) > 0 or
-                    len(current_drone.next_zone.connections[
-                        current_drone.current_zone.name
-                    ].wish_to_occupy) >= current_drone.next_zone.connections[
-                        current_drone.current_zone.name
-                    ].max_link_capacity
-                )
-            ):
-                to_explore = current_drone.next_zone.connections[
-                    current_drone.current_zone.name
-                ]
-
-            elif (
-                len(current_drone.next_zone.occupied) > 0
-                and current_drone.next_zone != current_drone.goal
-            ):
-                to_explore = current_drone.next_zone
-
-            if to_explore:
-
-                for neighbor_drone in to_explore.occupied:
-
-                    if neighbor_drone == current_drone:
-                        continue
-                    self.recursive_path_update(neighbor_drone, updated_drones)
-
-        current_drone.reevaluate_drone_path(self.path_cache)
-        current_drone.update_intent()
-        updated_drones.add(current_drone)
-
-    def recursive_action_update(
-        self,
-        current_drone: Drone,
-        updated_drones: set[Drone]
-    ) -> None:
-
-        """
-
-        Recursively make each drone execute their turn,
+        Make each drone execute their turn,
         making sure the drones are updated in order of zone occupancy
         so that a drone can evaluate zone accessibility correctly.
 
-        Parameters
-        ----------
-        current_drone: Drone
-            The current drone to update.
-        updated_drones: list[Drone]
-            The list of drones that were already updated.
+        """
+        ordered_drones: list[Drone] = self.update_order()
+        updated: set[Drone] = set()
+
+        for drone in ordered_drones:
+
+            if drone in updated:
+                continue
+
+            drone.turn_action()
+            updated.add(drone)
+            # print(f"updated action for drone {drone.id}\n")
+
+        for check_drone in self.drones:
+
+            if check_drone not in updated:
+
+                check_drone.turn_action()
+                # print(f"updated action for drone {check_drone.id}\n")
+
+    @staticmethod
+    def get_dependency(drone: Drone) -> None | Zone | Connection:
 
         """
 
-        if current_drone in updated_drones:
-            return
+        Search for a possible zone or connection
+        dependency for the drone given,
+        looking if the next step for the drone
+        is already occupied by other drones
+        that should be updated before it.
 
-        if hasattr(current_drone, "next_zone"):
+        Parameters
+        ----------
+        drone: Drone
+            The drone for which to look for a dependency.
 
-            to_explore: Zone | Connection | None = None
+        Returns
+        -------
+        None | Zone | Connection
+            The dependency zone in which other drones should be updated first
+            if found, otherwise None.
 
+        """
+
+        if not hasattr(drone, "next_zone"):
+
+            return None
+
+        if (
+            drone.next_zone.zone_type == "restricted"
+            and not isinstance(drone.current_zone, Connection)
+        ):
+            connection: Connection = drone.next_zone.connections[
+                drone.current_zone.name
+            ]
             if (
-                current_drone.next_zone.zone_type == "restricted"
-                and not isinstance(current_drone.current_zone, Connection)
-                and (
-                    len(current_drone.next_zone.connections[
-                        current_drone.current_zone.name
-                    ].occupied) > 0 or
-                    len(current_drone.next_zone.connections[
-                        current_drone.current_zone.name
-                    ].wish_to_occupy) >= current_drone.next_zone.connections[
-                        current_drone.current_zone.name
-                    ].max_link_capacity
-                )
+                len(connection.occupied) > 0 or
+                len(connection.wish_to_occupy) >= connection.max_link_capacity
             ):
-                to_explore = current_drone.next_zone.connections[
-                    current_drone.current_zone.name
-                ]
+                return connection
 
-            elif (
-                len(current_drone.next_zone.occupied) > 0
-                and current_drone.next_zone != current_drone.goal
-            ):
-                to_explore = current_drone.next_zone
+        elif (
+            len(drone.next_zone.occupied) > 0
+            and drone.next_zone != drone.goal
+        ):
+            return drone.next_zone
 
-            if to_explore:
-
-                for neighbor_drone in to_explore.occupied:
-
-                    if neighbor_drone == current_drone:
-                        continue
-                    self.recursive_action_update(
-                        neighbor_drone,
-                        updated_drones
-                    )
-
-        current_drone.turn_action()
-        updated_drones.add(current_drone)
+        return None
 
     def update_drones(self, state: State) -> None:
 
@@ -483,15 +538,24 @@ class DroneMonitor:
 
         """
 
+        for free_z in self.drone_map.hubs:
+
+            free_z.wish_to_occupy = []
+
+        for free_c in self.drone_map.connections:
+
+            free_c.wish_to_occupy = []
+
         self.path_cache: dict[str, list[Path]] = {}
 
-        updated_drones: set[Drone] = set()
-        for drone in self.drones:
-            self.recursive_path_update(drone, updated_drones)
-
-        updated_drones = set()
-        for drone in self.drones:
-            self.recursive_action_update(drone, updated_drones)
+        self.path_update()
+        # print("\n\n==== PATHS CHOSEN ====\n")
+        # for drone in self.drones:
+        #     print(f"DRONE {drone.id} :", end="")
+        #     for z in drone.path_to_follow.path:
+        #         print(f" {z.name}", end="")
+        #     print(f" -> cost: {drone.path_to_follow.cost}\n")
+        self.action_update()
 
         moving_drones: list[Drone] = []
 

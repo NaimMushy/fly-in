@@ -4,7 +4,7 @@ import time
 from srcs import MapParser, Map, PathFinder, DroneMonitor, TuiDisplay, State
 
 
-DEFAULT_MAP: str = "maps/easy/errortest.txt"
+DEFAULT_MAP: str = "maps/easy/01_linear_path.txt"
 
 
 MAP_DIR: str = "maps"

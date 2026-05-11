@@ -640,13 +640,19 @@ class DisplayZone:
 
         for con_drone, con_row, con_col, _ in self.con_drones:
 
-            lines[con_row][con_col].connection_char = CHARACTERS["drone"]
+            if lines[con_row][con_col].connection_char:
+                lines[con_row][con_col].connection_char = CHARACTERS["drone"]
+            else:
+                lines[con_row][con_col].char = CHARACTERS["drone"]
             lines[con_row][con_col].style = self.color + " blink"
 
             for c in str(con_drone):
 
                 con_col += 1
-                lines[con_row][con_col].connection_char = c
+                if lines[con_row][con_col].connection_char:
+                    lines[con_row][con_col].connection_char = c
+                else:
+                    lines[con_row][con_col].char = c
                 lines[con_row][con_col].style = self.color + " blink"
 
     @staticmethod
