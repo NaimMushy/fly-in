@@ -368,6 +368,21 @@ class DroneMonitor:
         updated_drones: set[Drone]
     ) -> None:
 
+        """
+
+        Recursively reevaluate paths for each drone,
+        making sure the drones are updated in order of zone occupancy
+        so that a drone can evaluate path cost correctly.
+
+        Parameters
+        ----------
+        current_drone: Drone
+            The current drone to update.
+        updated_drones: list[Drone]
+            The list of drones that were already updated.
+
+        """
+
         if current_drone in updated_drones:
             # print(f"drone {current_drone.id} has already been updated!")
             return
@@ -423,6 +438,21 @@ class DroneMonitor:
         current_drone: Drone,
         updated_drones: set[Drone]
     ) -> None:
+
+        """
+
+        Recursively make each drone execute their turn,
+        making sure the drones are updated in order of zone occupancy
+        so that a drone can evaluate zone accessibility correctly.
+
+        Parameters
+        ----------
+        current_drone: Drone
+            The current drone to update.
+        updated_drones: list[Drone]
+            The list of drones that were already updated.
+
+        """
 
         if current_drone in updated_drones:
             # print(f"drone {current_drone.id} has already been updated!")

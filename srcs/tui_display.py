@@ -1020,6 +1020,18 @@ class TuiDisplay:
     @staticmethod
     def display_maps(maps: dict[str, list[str]], map_dir: str) -> None:
 
+        """
+
+        Displays the map paths for the user to copy paste.
+
+        Parameters
+        ----------
+        maps: dict[str, list[str]]
+            The dictionary containing map categories and their respective maps.
+        map_dir: str
+            The base directory in which the map paths are.
+
+        """
         print("\n✦ MAPS AVAILABLE ✦\n")
 
         for map_type, map_path in maps.items():

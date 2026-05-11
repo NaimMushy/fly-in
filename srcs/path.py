@@ -47,6 +47,29 @@ class PathFinder:
         root_path: list[Zone]
     ) -> Path | None:
 
+        """
+
+        A pathfinding algorithm that uses best-first-search
+        with a priority queue in order to find the best cost path.
+
+        Parameters
+        ----------
+        start : Zone
+            The starting zone of the pathfinding.
+        dest : Zone
+            The goal point of the path.
+        blocked_zones: int
+            The zones that the path should not explore.
+        root_path: list[Zone]
+            The root path from which the current path found stems.
+
+        Returns
+        -------
+        Path | None
+            The best path found between the start and the destination
+            if there is one, otherwise None.
+
+        """
         unique: int = 0
         stack: list[tuple[int, int, bool, Zone, list[Zone]]] = [
             (0, unique, False, start, [start])
