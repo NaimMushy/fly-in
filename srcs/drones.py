@@ -75,7 +75,6 @@ class Drone:
 
         if self.is_next_step_accessible(self.path_to_follow):
 
-            # print(f"drone {self.id} can move to next zone\n")
             self.waiting = False
 
             for occup in self.occupying:
@@ -115,7 +114,6 @@ class Drone:
 
         else:
 
-            # print(f"drone {self.id} has to wait a turn\n")
             self.waiting = True
 
     def is_next_step_accessible(self, path: Path) -> bool:
@@ -167,7 +165,6 @@ class Drone:
 
         if con_sp_rem == 0:
 
-            # print(f"no spaces remaining in connection {connection.name} for drone {self.id}\n")
             if next_step.zone_type == "restricted":
 
                 if (
@@ -182,7 +179,6 @@ class Drone:
 
         if ns_sp_rem == 0:
 
-            # print(f"no spaces remaining in zone {next_step.name} for drone {self.id}\n")
             if next_step.zone_type == "restricted":
 
                 if (
@@ -195,7 +191,6 @@ class Drone:
 
             return next_step.is_accessible(self.id)
 
-        # print(f"connection accessible: {connection.is_accessible(self.id)}, zone accessible: {next_step.is_accessible(self.id)} for drone {self.id}\n")
         return (
             connection.is_accessible(self.id)
             and next_step.is_accessible(self.id)
@@ -257,19 +252,12 @@ class Drone:
                     self.current_zone.name
                 ].is_accessible(self.id):
 
-                    # print(f"connection {path.path[0].connections[self.current_zone.name].name} is not accessible for drone {self.id}! added cost: {path.path[0].connections[self.current_zone.name].calculate_wait_cost(self.id)}\n")
-                    # print(f"connection occupied : {len(path.path[0].connections[self.current_zone.name].occupied)}")
-                    # print("connection wish to occupy:", end="")
-                    # for wto in path.path[0].connections[self.current_zone.name].wish_to_occupy:
-                    #     print(f" {wto.id}", end="")
-                    # print("\n")
                     path.cost += path.path[0].connections[
                         self.current_zone.name
                     ].calculate_wait_cost(self.id)
 
                 elif not path.path[0].is_accessible(self.id):
 
-                    # print(f"zone {path.path[0].name} is not accessible for drone {self.id}! added cost: {path.path[0].calculate_wait_cost(self.id)}\n")
                     path.cost += path.path[0].calculate_wait_cost(self.id)
 
             if path.path[0].zone_type == "priority":
@@ -435,7 +423,6 @@ class DroneMonitor:
             drone.reevaluate_drone_path(self.path_cache)
             drone.update_intent()
             updated.add(drone)
-            # print(f"updated path for drone {drone.id}\n")
 
         for check_drone in self.drones:
 
@@ -443,7 +430,6 @@ class DroneMonitor:
 
                 check_drone.reevaluate_drone_path(self.path_cache)
                 check_drone.update_intent()
-                # print(f"updated path for drone {check_drone.id}\n")
 
     def action_update(self) -> None:
 
@@ -464,14 +450,12 @@ class DroneMonitor:
 
             drone.turn_action()
             updated.add(drone)
-            # print(f"updated action for drone {drone.id}\n")
 
         for check_drone in self.drones:
 
             if check_drone not in updated:
 
                 check_drone.turn_action()
-                # print(f"updated action for drone {check_drone.id}\n")
 
     @staticmethod
     def get_dependency(drone: Drone) -> None | Zone | Connection:
@@ -549,12 +533,6 @@ class DroneMonitor:
         self.path_cache: dict[str, list[Path]] = {}
 
         self.path_update()
-        # print("\n\n==== PATHS CHOSEN ====\n")
-        # for drone in self.drones:
-        #     print(f"DRONE {drone.id} :", end="")
-        #     for z in drone.path_to_follow.path:
-        #         print(f" {z.name}", end="")
-        #     print(f" -> cost: {drone.path_to_follow.cost}\n")
         self.action_update()
 
         moving_drones: list[Drone] = []
