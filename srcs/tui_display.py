@@ -608,8 +608,10 @@ class DisplayZone:
                     and drone not in [d.id for d in self.zone.occupied]
                 ):
                     self.con_drones.append((
-                        drone, path[len(path) // 2 + len(self.con_drones)][0],
-                        path[len(path) // 2 + len(self.con_drones)][1],
+                        drone, path[
+                            (len(path) // 2) + len(self.con_drones)
+                        ][0],
+                        path[(len(path) // 2) + len(self.con_drones)][1],
                         parent_name
                     ))
 
@@ -822,7 +824,7 @@ class Row:
 
     """
 
-    def __init__(self, row_id: int, pad: int) -> None:
+    def __init__(self, row_id: int) -> None:
 
         """
 
@@ -841,8 +843,25 @@ class Row:
         self.zones: list[DisplayZone] = []
         self.lines: list[list[Char]] = []
         self.height: int = 0
-        self.width: int = -pad
-        self.padding: int = pad
+        self.width: int = 0
+        self.padding: int = 0
+
+    def set_padding(self) -> None:
+
+        self.ver_pad: int = 5
+        self.hor_pad: int = 10
+        self.width += self.hor_pad
+
+        if len(self.zones) == 0:
+            return
+
+        max_pad: int = max([
+            con.max_link_capacity for z in self.zones
+            for con in z.connections.values()
+        ])
+        self.hor_pad += max_pad
+        self.ver_pad += (max_pad // 2)
+        self.width += self.hor_pad * (len(self.zones) - 1)
 
     def add_new_zone(self, z: DisplayZone) -> None:
 
@@ -859,7 +878,7 @@ class Row:
         """
 
         self.zones.append(z)
-        self.width += z.width + self.padding
+        self.width += z.width
         if z.height > self.height:
             self.height = z.height
         z.row_id = self.id
@@ -874,7 +893,9 @@ class Row:
 
         """
 
-        for line in range(self.height + 5 + (len(self.zones) // 3)):
+        self.set_padding()
+
+        for line in range(self.height + self.ver_pad):
 
             cur_line: list[Char] = []
 
@@ -883,7 +904,7 @@ class Row:
                 zone.add_to_line(line, cur_line)
 
                 if zone != self.zones[-1]:
-                    cur_line += DisplayZone.add_space(self.padding)
+                    cur_line += DisplayZone.add_space(self.hor_pad)
 
             self.lines.append(cur_line)
 
