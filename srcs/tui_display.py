@@ -848,7 +848,7 @@ class Row:
 
     def set_padding(self) -> None:
 
-        self.ver_pad: int = 5
+        self.ver_pad: int = 10
         self.hor_pad: int = 10
         self.width += self.hor_pad
 
@@ -857,7 +857,7 @@ class Row:
 
         max_pad: int = max([
             con.max_link_capacity for z in self.zones
-            for con in z.connections.values()
+            for con in z.zone.connections.values()
         ])
         self.hor_pad += max_pad
         self.ver_pad += (max_pad // 2)
@@ -1153,7 +1153,7 @@ class TuiDisplay:
 
         """
 
-        self.rows: list[Row] = [Row(0, self.padding)]
+        self.rows: list[Row] = [Row(0)]
         cur_row: int = 0
 
         new_zone: DisplayZone = self.zones[self.map.start_hub.name]
@@ -1165,7 +1165,7 @@ class TuiDisplay:
 
         while goal not in self.rows[cur_row].zones:
 
-            self.rows.append(Row(cur_row + 1, self.padding))
+            self.rows.append(Row(cur_row + 1))
 
             for z in self.rows[cur_row].zones:
 
