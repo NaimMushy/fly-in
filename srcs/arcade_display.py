@@ -4,7 +4,7 @@ from .zones import Zone
 
 class Display:
 
-    def __init__(self, zones: list[Zone], px_sz: int = 200) -> None:
+    def __init__(self, zones: list[Zone], px_sz: int = 100) -> None:
 
         self.zones: list[Zone] = zones
         self.px_sz: int = px_sz
@@ -43,9 +43,8 @@ class Display:
 
         for zone in self.zones:
 
-            zone_x = (zone.x + self.x_offset) * self.px_sz + self.padding
-            zone_y = (zone.y + self.y_offset) * self.px_sz + self.padding
-            print(zone_x, zone_y)
+            zone_x = (zone.x + self.x_offset) * self.px_sz + self.padding + self.zone_sz // 2
+            zone_y = (zone.y + self.y_offset) * self.px_sz + self.padding + self.zone_sz // 2
             arcade.draw_rect_outline(arcade.rect.XYWH(zone_x, zone_y, self.zone_sz, self.zone_sz), arcade.color.BRITISH_RACING_GREEN)
 
         arcade.finish_render()
