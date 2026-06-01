@@ -57,7 +57,7 @@ class Connection(BaseModel):
         """
 
         if not self.occupied:
-            return 0
+            return self.max_link_capacity
 
         return len([
             drone for drone in self.occupied
@@ -83,17 +83,18 @@ class Connection(BaseModel):
 
         """
 
-        cost: int = 1
+        cost: int = 0
 
         for drone_wish in self.wish_to_occupy:
 
+            cost += 1
             if drone_wish.id == drone_id:
                 break
-            cost += 1
 
-        return abs(
-            cost - (self.max_link_capacity - len(self.occupied))
-        ) - self.free_spaces()
+        return max(
+            0,
+            cost - self.free_spaces()
+        )
 
     def is_accessible(self, drone_id: int) -> bool:
 
@@ -246,7 +247,7 @@ class Zone(BaseModel):
         """
 
         if not self.occupied:
-            return 0
+            return self.max_drones
 
         return len([
             drone for drone in self.occupied
@@ -272,18 +273,18 @@ class Zone(BaseModel):
 
         """
 
-        cost: int = 1
+        cost: int = 0
 
         for drone_wish in self.wish_to_occupy:
 
+            cost += 1
             if drone_wish.id == drone_id:
                 break
 
-            cost += 1
-
-        return abs(
-            cost - (self.max_drones - len(self.occupied))
-        ) - self.free_spaces()
+        return max(
+            0,
+            cost - self.free_spaces()
+        )
 
     def is_accessible(self, drone_id: int) -> bool:
 

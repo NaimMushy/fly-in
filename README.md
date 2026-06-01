@@ -3,9 +3,17 @@
 
 # ==== FLY-IN ====
 
+## Table of contents
 
-<details>
-  <summary><h3>Description</h3></summary>
+  1. [Description](#description)
+  2. [Instructions](#instructions)
+  3. [Resources](#resources)
+  4. [Algorithm](#algorithm)
+  5. [Visual Representation](#visual-representation)<br><br>
+
+
+
+### Description
 
 
   ____
@@ -20,10 +28,10 @@
   The simulation stops when all the drones have reached the end zone, all the while trying to achieve a minimal number of turns.<br><br>
   A visualization of the simulation step by step is provided with a terminal display, offering user interaction through small menus and commands.<br>
   
-</details>
 
-<details>
-  <summary><h3>Instructions</h3></summary>
+
+
+### Instructions
 
 
   ____
@@ -93,9 +101,8 @@
   
     If the current state of the simulation is the last one, meaning all the drones have been delivered, going to the next step of the simulation will end the simulation and return to the start menu.<br>
 
-</details>
-<details>
-  <summary><h3>Resources</h3></summary>
+
+### Resources
 
 
   ____
@@ -117,10 +124,8 @@
   
   I asked ChatGPT for some help regarding some issues with the terminal display as well as for debugging.<br>
 
-</details>
 
-<details>
-  <summary><h3>Algorithm</h3></summary>
+  ### Algorithm
 
 
   ____
@@ -128,9 +133,17 @@
   **Pathfinding Algorithm:**
 
   I used a combination of Dijkstra algorithm and Yen's K shortest path algorithm.<br>
-  The Dijkstra algorithm searches for the lowest cost path it can find (just like a BFS but with a priority queue implemented), while the Yen's K algorithm repeats the Dijkstra until K best paths are obtained or no more paths are found.<br>
-  I start with all of my zones unblocked and then I add the zones and corresponding connections to a list of blocked zones, so that the Dijkstra doesn't find the same path each time.<br>
-  I used heapq instead of lists to be able to push and pop the paths and have them organized by cost instead of arrival.<br>
+  The Dijkstra algorithm searches for the lowest cost path it can find (just like a BFS but with a priority queue implemented), while the Yen's K algorithm repeats the Dijkstra until K best paths are obtained or no more paths are found.<br><br>
+  The Dijkstra algorithm starts from a given zone, with a priority queue containing only that zone.<br>
+  Then, it iteratively takes the path with the lowest cost in the stack and the zone associated with it and explores all neighboring zones of the current zone, adding them to the stack with the corresponding path (if they were not already in the stack with a lower path cost).<br>
+  When the destination is found or there are no more zones in the stack (no path available), the algorithm returns the best path it found.<br>
+  I used heapq instead of lists because it ensures my paths are stored and retrieved by cost instead of arrival.<br><br>
+  For Yen's K shortest path algorithm, the main idea is to build a list of the best paths found so far, and a set of potential paths.<br>
+  Initially, the best paths contain only the absolute shortest path.<br>
+  For each iteration (from 1 to K), I examine each path and generate new potential paths by deviating from the current path at each node except the destination.<br>
+  The deviation is done by establishing a root path (the current path until the current node) and computing the shortest path from that node to the destination while temporarily removing zones that would cause a loop or duplicate a previously found path.<br><br>
+  Using the two in tandem allows me to find at most the 5 (default) best alternatives for each drone, so that they can follow the proper path, but without having to calculate **every** path that exists (that makes the program too slow).<br><br>
+  
 
   **Drone Routing:**
 
@@ -144,9 +157,8 @@
   At first, I struggled to form lines that seemed okay, then I decided to calculate a path of coordinates using a simple and efficient algorithm I was familiar with.<br>
   The result is pretty acceptable, becoming a bit jumbled when there are too many connections as they can overlap each other, but I didn't find a better way to do it in the terminal interface.<br><br>
 
-</details>
-<details>
-  <summary><h3>Visual Representation</h3></summary>
+
+### Visual Representation
 
 
   ____
@@ -160,4 +172,3 @@
   To avoid having to calculate again if the same map is launched more than once, I defined State objects that contain all the information relevant to a certain simulation and each of its steps.<br>
   That way, I can simply display the required states for the simulation if they have already been created.<br><br>
   What's more, with the information mode enabled, the type of the zone is displayed on the top border, and additional information regarding the drones and zones is printed at the end of a turn.<br><br>
-</details>

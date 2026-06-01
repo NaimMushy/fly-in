@@ -621,6 +621,13 @@ class MapParser:
                         "Color for the zone is already defined"
                     )
 
+                if not match.group(2).isalnum():
+
+                    raise ValueError(
+                        f"Color {match.group(1)} is an invalid color"
+                        "(should be in one word)"
+                    )
+
                 try:
                     color_parsed: Color = Color.parse(match.group(2))
 
