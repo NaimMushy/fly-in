@@ -132,7 +132,7 @@ def launch_drones(
         input("Press any key to continue...")
         return 0
 
-    display: Display = Display(drone_map.hubs)
+    display: Display = Display(drone_map.hubs, drone_map.connections)
     display.draw_zones()
     return 1
 
