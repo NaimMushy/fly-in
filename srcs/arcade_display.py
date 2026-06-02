@@ -1,10 +1,39 @@
 import arcade
+import time
 from .zones import Zone, Connection
+from .drones import DroneMonitor
+
+
+class DisplayView(arcade.View):
+
+    def __init__(self, display: "Display", monitor: DroneMonitor) -> None:
+
+        super().__init__()
+
+        self.display: "Display" = display
+        self.monitor: DroneMonitor = monitor
+        self.background_color = arcade.color.WHITE
+
+    def on_update(self, delta_time):
+
+        if not self.monitor.drones:
+            return
+
+        time.sleep(0.5)
+        self.monitor.update_drones()
+
+    def on_draw(self):
+
+        if not self.monitor.drones:
+            return
+
+        self.clear()
+        self.display.draw_zones()
 
 
 class Display:
 
-    def __init__(self, zones: list[Zone], connections: list[Connection], px_sz: int = 100) -> None:
+    def __init__(self, zones: list[Zone], connections: list[Connection], drone_monitor: DroneMonitor, px_sz: int = 100) -> None:
 
         self.zones: list[Zone] = zones
         self.connections: list[Connection] = connections
@@ -12,6 +41,14 @@ class Display:
         self.zone_sz: int = px_sz // 2
         self.padding: int = (self.px_sz - self.zone_sz) // 2
         self.calculate_board_sz()
+        self.monitor: DroneMonitor = drone_monitor
+
+    def start_visu(self):
+
+        window = arcade.Window(self.board_width, self.board_height, "FLY IN DRONES")
+        gameview: DisplayView = DisplayView(self, self.monitor)
+        window.show_view(gameview)
+        arcade.run()
 
     def calculate_board_sz(self) -> None:
 
@@ -63,14 +100,8 @@ class Display:
             return zone1_x, zone1_y - offset, zone2_x, zone2_y + offset
 
         return zone1_x, zone1_y + offset, zone2_x, zone2_y - offset
-
+    
     def draw_zones(self) -> None:
-
-        arcade.open_window(self.board_width, self.board_height, "arcade test", resizable=True)
-
-        arcade.set_background_color(arcade.color.WHITE)
-
-        arcade.start_render()
 
         self.zones_coor = {}
 
@@ -93,11 +124,35 @@ class Display:
                 2
             )
 
+        texture = arcade.load_texture("drone_pixel_art.avif")
+        scale = .01
+        scaled_width = texture.width * scale
+        scaled_height = texture.height * scale
+
         for zone in self.zones:
 
             arcade.draw_rect_filled(arcade.rect.XYWH(self.zones_coor[zone.name][0], self.zones_coor[zone.name][1], self.zone_sz, self.zone_sz), arcade.color.WHITE)
             arcade.draw_rect_outline(arcade.rect.XYWH(self.zones_coor[zone.name][0], self.zones_coor[zone.name][1], self.zone_sz, self.zone_sz), arcade.color.BRITISH_RACING_GREEN, 2)
 
-        arcade.finish_render()
+            drone_startx = self.zones_coor[zone.name][0] - self.zone_sz // 2 + 2 + scaled_width // 2
+            drone_starty = self.zones_coor[zone.name][1] + self.zone_sz // 2 - 2 - scaled_height // 2
 
-        arcade.run()
+            print(f"zone start coordinates : x = {self.zones_coor[zone.name][0] - self.zone_sz // 2} y = {self.zones_coor[zone.name][1] + self.zone_sz // 2}")
+            print(f"drone start coordinates : x = {drone_startx, drone_starty}")
+            display_drones = (
+                zone.occupied if zone != self.monitor.drones[0].goal
+                else self.monitor.drones_delivered
+            )
+            for drone in display_drones:
+                if drone_startx + scaled_width > self.zones_coor[zone.name][0] + self.zone_sz - 2:
+                    drone_startx = self.zones_coor[zone.name][0] - self.zone_sz // 2 + 2 + scaled_width // 2
+                    drone_starty -= scaled_height - 5
+                if drone_starty < self.zones_coor[zone.name][1] - self.zone_sz // 2 + 2:
+                    drone_starty = self.zones_coor[zone.name][1] + self.zone_sz // 2 - 2 - scaled_height // 2
+
+                arcade.draw_texture_rect(
+                    texture,
+                    arcade.XYWH(drone_startx, drone_starty, scaled_width, scaled_height)
+                )
+                # arcade.draw_point(drone_startx, drone_starty, arcade.color.RED, 5)
+                drone_startx += scaled_width + 5

@@ -132,25 +132,23 @@ def launch_drones(
         input("Press any key to continue...")
         return 0
 
-    display: Display = Display(drone_map.hubs, drone_map.connections)
-    display.draw_zones()
-    return 1
+    if map_file not in states.keys():
 
-#     tui_display: TuiDisplay = TuiDisplay(drone_map, info_mode)
-# 
-#     if map_file not in states.keys():
-# 
-#         map_parser.already_parsed[map_file] = drone_map
-#         print(f" ✔ Map '{map_file}' validated!\n")
-#         time.sleep(0.5)
-# 
-#     if map_file not in states.keys() or (
-#         info_mode and not any(lst_state[3] for lst_state in states[map_file])
-#     ):
-#         drone_monitor: DroneMonitor = DroneMonitor(
-#             drone_map,
-#         )
-# 
+        map_parser.already_parsed[map_file] = drone_map
+        print(f" ✔ Map '{map_file}' validated!\n")
+        time.sleep(0.5)
+
+    if map_file not in states.keys() or (
+        info_mode and not any(lst_state[3] for lst_state in states[map_file])
+    ):
+        drone_monitor: DroneMonitor = DroneMonitor(
+            drone_map,
+        )
+        display: Display = Display(drone_map.hubs, drone_map.connections, drone_monitor)
+        display.start_visu()
+
+        return 1
+
 #         new_state: State = State(info_mode, tui_display.console)
 #         new_state.turn = 0
 #         new_state.display_map = tui_display.map_updated([])

@@ -506,7 +506,7 @@ class DroneMonitor:
 
         return None
 
-    def update_drones(self, state: State) -> None:
+    def update_drones(self) -> None:
 
         """
 
@@ -553,35 +553,35 @@ class DroneMonitor:
             and not drone.waiting
         ]
 
-        state.nb_drone_moved = len(moving_drones)
+#         state.nb_drone_moved = len(moving_drones)
+# 
+#         for drone in self.drones:
+# 
+#             for occupied in drone.occupying:
+# 
+#                 if (
+#                     (
+#                         isinstance(occupied, Connection)
+#                         and drone.next_zone.zone_type != "restricted"
+#                     )
+#                     or occupied == drone.goal
+#                 ):
+#                     continue
+# 
+#                 if occupied.name not in state.zones_occupied.keys():
+#                     state.zones_occupied[occupied.name] = []
+# 
+#                 state.zones_occupied[occupied.name].append(drone.id)
 
-        for drone in self.drones:
-
-            for occupied in drone.occupying:
-
-                if (
-                    (
-                        isinstance(occupied, Connection)
-                        and drone.next_zone.zone_type != "restricted"
-                    )
-                    or occupied == drone.goal
-                ):
-                    continue
-
-                if occupied.name not in state.zones_occupied.keys():
-                    state.zones_occupied[occupied.name] = []
-
-                state.zones_occupied[occupied.name].append(drone.id)
-
-        state.drones_delivered = []
+        # state.drones_delivered = []
         goal_occupancy: list[int] = []
 
         for drone in moving_drones:
 
-            if drone != moving_drones[0]:
-                state.drone_moves += " "
+            # if drone != moving_drones[0]:
+            #     state.drone_moves += " "
 
-            state.drone_moves += f"D{drone.id}-{drone.current_zone.name}"
+            # state.drone_moves += f"D{drone.id}-{drone.current_zone.name}"
 
             if drone.current_zone == drone.goal:
 
@@ -589,10 +589,10 @@ class DroneMonitor:
                 self.drones_delivered.append(drone)
                 self.drones.remove(drone)
 
-        if len(goal_occupancy) > 0:
-            state.zones_occupied[self.drone_map.end_hub.name] = goal_occupancy
+        # if len(goal_occupancy) > 0:
+        #     state.zones_occupied[self.drone_map.end_hub.name] = goal_occupancy
 
-        state.drones_delivered = [d.id for d in self.drones_delivered]
+        # state.drones_delivered = [d.id for d in self.drones_delivered]
 
         self.turns += 1
-        state.turn = self.turns
+        # state.turn = self.turns
