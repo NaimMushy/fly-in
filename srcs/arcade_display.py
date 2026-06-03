@@ -1,119 +1,180 @@
 import arcade
-import time
+# import time
+import tkinter
 from .zones import Zone, Connection
-from .drones import DroneMonitor
+from .drones import Drone
+
+
+root = tkinter.Tk()
+root.withdraw()
+WIDTH = root.winfo_screenwidth()
+HEIGHT = root.winfo_screenheight()
+root.quit()
+
+
+TARGET_FPS = 60
 
 
 class DisplayView(arcade.View):
 
-    def __init__(self, display: "Display", monitor: DroneMonitor) -> None:
+    def __init__(self, display: "Display") -> None:
 
         super().__init__()
 
         self.display: "Display" = display
-        self.monitor: DroneMonitor = monitor
         self.background_color = arcade.color.WHITE
+        self.target_fps: int = 60
+        self.frame_count: int = 0
+        self.on_pause: bool = False
 
-    def on_update(self, delta_time):
+    def on_update(self, delta_time: float = 1 / 60):
 
-        if not self.monitor.drones:
+        if self.on_pause:
             return
-
-        time.sleep(0.5)
-        self.monitor.update_drones()
+        self.frame_count += 1
+        if self.frame_count < self.target_fps:
+            return
+        self.frame_count = 0
+        self.display.cur_state_id += 1
+        if self.display.cur_state_id == len(self.display.states):
+            self.display.cur_state_id = 0
 
     def on_draw(self):
 
-        if not self.monitor.drones:
+        if self.on_pause:
             return
-
         self.clear()
-        self.display.draw_zones()
+        self.display.draw_state()
+
+    def on_key_press(self, key, modifiers):
+
+        if key == arcade.key.SPACE:
+            self.on_pause = not (self.on_pause)
+        if key == arcade.key.UP:
+            if self.target_fps / 1.5 >= 20:
+                self.target_fps = int(self.target_fps / 1.5)
+        if key == arcade.key.DOWN:
+            if self.target_fps * 1.5 <= 180:
+                self.target_fps = int(self.target_fps * 1.5)
+        if key == arcade.key.ESCAPE:
+            arcade.close_window()
+
+
+class State:
+
+    def __init__(self, zones: dict, connections: dict, drones: dict, turn_nb: int) -> None:
+
+        self.zones: dict = zones
+        self.connections: dict = connections
+        self.drones: dict = drones
+        self.turn_nb: int = turn_nb
+
+    def display_information(self) -> None:
+
+        print(f"==== TURN {self.turn_nb} ====\n")
+        fst: bool = True
+
+        for drone in [d for d in self.drones.keys() if not d.waiting]:
+
+            if not fst:
+                print(" ")
+
+            print(f"D{drone.id}-{drone.occupying.name}", end="")
+            fst = False
+
+        print()
 
 
 class Display:
 
-    def __init__(self, zones: list[Zone], connections: list[Connection], drone_monitor: DroneMonitor, px_sz: int = 100) -> None:
+    class Measures:
 
-        self.zones: list[Zone] = zones
-        self.connections: list[Connection] = connections
-        self.px_sz: int = px_sz
-        self.zone_sz: int = px_sz // 2
-        self.padding: int = (self.px_sz - self.zone_sz) // 2
-        self.calculate_board_sz()
-        self.monitor: DroneMonitor = drone_monitor
+        def __init__(self, zones: list[Zone]) -> None:
 
-    def start_visu(self):
+            min_x: int = min([z.x for z in zones])
+            min_y: int = min([z.y for z in zones])
+            max_x: int = max([z.x for z in zones])
+            max_y: int = max([z.y for z in zones])
 
-        window = arcade.Window(self.board_width, self.board_height, "FLY IN DRONES")
-        gameview: DisplayView = DisplayView(self, self.monitor)
+            self.x_offset: int = (
+                0 if min_x >= 0 else abs(min_x)
+            )
+            self.y_offset: int = (
+                0 if min_y >= 0 else abs(min_y)
+            )
+
+            board_width: int = (
+                max_x if min_x >= 0 else (max_x - min_x)
+            ) + 1
+            board_height: int = (
+                max_y if min_y >= 0 else (max_y - min_y)
+            ) + 1
+
+            self.px_sz = (HEIGHT // board_height if HEIGHT // board_height < WIDTH // board_width else WIDTH // board_width) + 1
+            self.zone_sz = self.px_sz // 2
+            self.padding = self.zone_sz // 2
+
+    def __init__(self, zones: list[Zone]) -> None:
+
+        self.msr = self.Measures(zones)
+        self.states: list[State] = []
+        self.cur_state_id: int = 0
+        self.drone_texture = arcade.load_texture("drone_pixel_art.avif")
+        max_drones_scale = max([z.max_drones for z in zones])
+        scale = ((self.msr.zone_sz - 4 - (5 * (max_drones_scale - 1))) // max_drones_scale) / self.drone_texture.width
+        self.text_scaled_width = self.drone_texture.width * scale
+        self.text_scaled_height = self.drone_texture.height * scale
+        while self.text_scaled_width < 20 and max_drones_scale > 1:
+            max_drones_scale -= 1
+            scale = ((self.msr.zone_sz - 4 - (5 * (max_drones_scale - 1))) // max_drones_scale) / self.drone_texture.width
+            self.text_scaled_width = self.drone_texture.width * scale
+            self.text_scaled_height = self.drone_texture.height * scale
+        print(self.text_scaled_width, self.text_scaled_height, max_drones_scale)
+
+    def start_visu(self) -> None:
+
+        window = arcade.Window(WIDTH, HEIGHT, "FLY IN DRONES", resizable=True)
+        gameview: DisplayView = DisplayView(self)
         window.show_view(gameview)
         arcade.run()
 
-    def calculate_board_sz(self) -> None:
+    def get_line_points(self, zone1: Zone, zone2: Zone, zones_coor: dict) -> tuple[int, int, int, int]:
 
-        min_x: int = min([z.x for z in self.zones])
-        min_y: int = min([z.y for z in self.zones])
-        max_x: int = max([z.x for z in self.zones])
-        max_y: int = max([z.y for z in self.zones])
+        zone1_x, zone1_y = zones_coor[zone1.name]
+        zone2_x, zone2_y = zones_coor[zone2.name]
+        return zone1_x, zone1_y, zone2_x, zone2_y
+#         x_offset = self.msr.zone_sz // 2 + 5
+#         y_offset = self.msr.zone_sz // 2 + 5
+#         if zone1.y == zone2.y:
+# 
+#             if zone1.x < zone2.x:
+#                 return zone1_x + x_offset, zone1_y, zone2_x - x_offset, zone2_y
+# 
+#             return zone2_x + x_offset, zone2_y, zone1_x - x_offset, zone1_y
+# 
+#         elif zone1.y < zone2.y:
+# 
+#             if zone1.x == zone2.x:
+#                 return zone1_x, zone1_y + y_offset, zone2_x, zone2_y - y_offset
+# 
+#             elif zone1.x < zone2.x:
+#                 return zone1_x, zone1_y + y_offset, zone2_x, zone2_y - y_offset
+# 
+#             return zone1_x, zone1_y - y_offset, zone2_x, zone2_y + y_offset
+# 
+#         if zone1.x == zone2.x:
+#             return zone1_x, zone1_y - y_offset, zone2_x, zone2_y + y_offset
+# 
+#         elif zone1.x < zone2.x:
+#             return zone1_x, zone1_y - y_offset, zone2_x, zone2_y + y_offset
+# 
+#         return zone1_x, zone1_y + y_offset, zone2_x, zone2_y - y_offset
 
-        self.x_offset: int = (
-            0 if min_x >= 0 else abs(min_x)
-        )
-        self.y_offset: int = (
-            0 if min_y >= 0 else abs(min_y)
-        )
+    def draw_state(self) -> None:
 
-        self.board_width: int = ((
-            max_x if min_x >= 0 else (max_x - min_x)
-        ) + 1) * self.px_sz
-        self.board_height: int = ((
-            max_y if min_y >= 0 else (max_y - min_y)
-        ) + 1) * self.px_sz
+        current_state: State = self.states[self.cur_state_id]
 
-    def get_line_points(self, zone1: Zone, zone2: Zone) -> tuple[int, int, int, int]:
-
-        zone1_x, zone1_y = self.zones_coor[zone1.name]
-        zone2_x, zone2_y = self.zones_coor[zone2.name]
-        offset = self.zone_sz // 2 + 5
-        if zone1.y == zone2.y:
-
-            if zone1.x < zone2.x:
-                return zone1_x + offset, zone1_y, zone2_x - offset, zone2_y
-
-            return zone2_x + offset, zone2_y, zone1_x - offset, zone1_y
-        
-        elif zone1.y < zone2.y:
-
-            if zone1.x == zone2.x:
-                return zone1_x, zone1_y + offset, zone2_x, zone2_y - offset
-
-            elif zone1.x < zone2.x:
-                return zone1_x, zone1_y + offset, zone2_x, zone2_y - offset
-
-            return zone1_x, zone1_y - offset, zone2_x, zone2_y + offset
-
-        if zone1.x == zone2.x:
-            return zone1_x, zone1_y - offset, zone2_x, zone2_y + offset
-
-        elif zone1.x < zone2.x:
-            return zone1_x, zone1_y - offset, zone2_x, zone2_y + offset
-
-        return zone1_x, zone1_y + offset, zone2_x, zone2_y - offset
-    
-    def draw_zones(self) -> None:
-
-        self.zones_coor = {}
-
-        for zone in self.zones:
-
-            zone_x = (zone.x + self.x_offset) * self.px_sz + self.padding + self.zone_sz // 2
-            zone_y = (zone.y + self.y_offset) * self.px_sz + self.padding + self.zone_sz // 2
-            self.zones_coor[zone.name] = (zone_x, zone_y)
-
-        for con in self.connections:
-
-            x1, y1, x2, y2 = self.get_line_points(con.zone1, con.zone2)
+        for x1, y1, x2, y2 in current_state.connections.values():
 
             arcade.draw_line(
                 x1,
@@ -124,35 +185,52 @@ class Display:
                 2
             )
 
-        texture = arcade.load_texture("drone_pixel_art.avif")
-        scale = .01
-        scaled_width = texture.width * scale
-        scaled_height = texture.height * scale
+        for zone_x, zone_y in current_state.zones.values():
 
-        for zone in self.zones:
+            arcade.draw_rect_filled(arcade.rect.XYWH(zone_x, zone_y, self.msr.zone_sz + 10, self.msr.zone_sz + 10), arcade.color.WHITE)
+            arcade.draw_rect_outline(arcade.rect.XYWH(zone_x, zone_y, self.msr.zone_sz, self.msr.zone_sz), arcade.color.BRITISH_RACING_GREEN, 2)
 
-            arcade.draw_rect_filled(arcade.rect.XYWH(self.zones_coor[zone.name][0], self.zones_coor[zone.name][1], self.zone_sz, self.zone_sz), arcade.color.WHITE)
-            arcade.draw_rect_outline(arcade.rect.XYWH(self.zones_coor[zone.name][0], self.zones_coor[zone.name][1], self.zone_sz, self.zone_sz), arcade.color.BRITISH_RACING_GREEN, 2)
+        for drone_x, drone_y in current_state.drones.values():
 
-            drone_startx = self.zones_coor[zone.name][0] - self.zone_sz // 2 + 2 + scaled_width // 2
-            drone_starty = self.zones_coor[zone.name][1] + self.zone_sz // 2 - 2 - scaled_height // 2
+            arcade.draw_texture_rect(
+                self.drone_texture,
+                arcade.XYWH(drone_x, drone_y, self.text_scaled_width, self.text_scaled_height)
+            )
 
-            print(f"zone start coordinates : x = {self.zones_coor[zone.name][0] - self.zone_sz // 2} y = {self.zones_coor[zone.name][1] + self.zone_sz // 2}")
-            print(f"drone start coordinates : x = {drone_startx, drone_starty}")
+    def add_state(self, zones: list[Zone], connections: list[Connection], drones_delivered: list[Drone]) -> None:
+
+        zones_coor: dict[str, tuple[int, int]] = {}
+        con_coor: dict[str, tuple[int, int, int, int]] = {}
+        drone_coor: dict[int, tuple[int, int]] = {}
+
+        for zone in zones:
+
+            zone_x = (zone.x + self.msr.x_offset) * self.msr.px_sz + self.msr.padding + self.msr.zone_sz // 2
+            zone_y = (zone.y + self.msr.y_offset) * self.msr.px_sz + self.msr.padding + self.msr.zone_sz // 2
+            zones_coor[zone.name] = (zone_x, zone_y)
+
+        for con in connections:
+
+            con_coor[con.name] = self.get_line_points(con.zone1, con.zone2, zones_coor)
+
+        for zone in zones:
+
+            drone_x = zones_coor[zone.name][0] - self.msr.zone_sz // 2 + 2 + self.text_scaled_width // 2
+            drone_y = zones_coor[zone.name][1] + self.msr.zone_sz // 2 - 2 - self.text_scaled_height // 2
+
             display_drones = (
-                zone.occupied if zone != self.monitor.drones[0].goal
-                else self.monitor.drones_delivered
+                zone.occupied if not zone.is_goal
+                else drones_delivered
             )
             for drone in display_drones:
-                if drone_startx + scaled_width > self.zones_coor[zone.name][0] + self.zone_sz - 2:
-                    drone_startx = self.zones_coor[zone.name][0] - self.zone_sz // 2 + 2 + scaled_width // 2
-                    drone_starty -= scaled_height - 5
-                if drone_starty < self.zones_coor[zone.name][1] - self.zone_sz // 2 + 2:
-                    drone_starty = self.zones_coor[zone.name][1] + self.zone_sz // 2 - 2 - scaled_height // 2
+                if drone_x + self.text_scaled_width // 2 > zones_coor[zone.name][0] + self.msr.zone_sz // 2 - 2:
+                    drone_x = zones_coor[zone.name][0] - self.msr.zone_sz // 2 + 2 + self.text_scaled_width // 2
+                    drone_y -= self.text_scaled_height - 5
+                if drone_y - self.text_scaled_height // 2 < zones_coor[zone.name][1] - self.msr.zone_sz // 2 + 2:
+                    drone_y = zones_coor[zone.name][1] + self.msr.zone_sz // 2 - 2 - self.text_scaled_height // 2
+                    drone_x = zones_coor[zone.name][0] - self.msr.zone_sz // 2 + 2 + self.text_scaled_width // 2
 
-                arcade.draw_texture_rect(
-                    texture,
-                    arcade.XYWH(drone_startx, drone_starty, scaled_width, scaled_height)
-                )
-                # arcade.draw_point(drone_startx, drone_starty, arcade.color.RED, 5)
-                drone_startx += scaled_width + 5
+                drone_coor[drone.id] = (drone_x, drone_y)
+                drone_x += self.text_scaled_width + 5
+
+        self.states.append(State(zones_coor, con_coor, drone_coor, len(self.states) - 1))

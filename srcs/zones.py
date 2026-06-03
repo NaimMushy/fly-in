@@ -143,6 +143,7 @@ class Zone(BaseModel):
     connections: dict[str, Connection] = Field(default={})
     wish_to_occupy: list[any] = Field(default=[])
     occupied: list[any] = Field(default=[])
+    is_goal: bool = Field(default=False)
 
     @model_validator(mode="after")
     def validate_name(self) -> self:

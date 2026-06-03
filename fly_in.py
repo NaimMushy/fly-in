@@ -144,7 +144,13 @@ def launch_drones(
         drone_monitor: DroneMonitor = DroneMonitor(
             drone_map,
         )
-        display: Display = Display(drone_map.hubs, drone_map.connections, drone_monitor)
+        display: Display = Display(drone_map.hubs)
+        display.add_state(drone_map.hubs, drone_map.connections, [])
+        while drone_monitor.drones:
+
+            drone_monitor.update_drones()
+            display.add_state(drone_map.hubs, drone_map.connections, drone_monitor.drones_delivered)
+
         display.start_visu()
 
         return 1

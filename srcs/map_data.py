@@ -149,6 +149,7 @@ class Map:
             )
 
         self.end_hub: Zone = self.add_hub(end_hub)
+        self.end_hub.is_goal = True
 
     def validate_connection(self, new_connection: str) -> None:
 
