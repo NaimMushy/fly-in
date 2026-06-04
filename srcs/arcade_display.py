@@ -123,12 +123,12 @@ class Display:
         max_drones_scale = max([z.max_drones for z in zones])
         scale = ((self.msr.zone_sz - 4 - (5 * (max_drones_scale - 1))) // max_drones_scale) / self.drone_texture.width
         self.text_scaled_width = self.drone_texture.width * scale
-        self.text_scaled_height = self.drone_texture.height * scale
-        while self.text_scaled_width < 20 and max_drones_scale > 1:
+        self.text_scaled_height = (self.drone_texture.height + 20) * scale
+        while self.text_scaled_width < 20 and self.text_scaled_height < 20 and max_drones_scale > 1:
             max_drones_scale -= 1
             scale = ((self.msr.zone_sz - 4 - (5 * (max_drones_scale - 1))) // max_drones_scale) / self.drone_texture.width
             self.text_scaled_width = self.drone_texture.width * scale
-            self.text_scaled_height = self.drone_texture.height * scale
+            self.text_scaled_height = (self.drone_texture.height + 20) * scale
         nb_drones_vertical = self.msr.zone_sz // self.text_scaled_height
         self.id_maxwidth = (self.msr.zone_sz - (nb_drones_vertical * self.text_scaled_height)) // nb_drones_vertical
 
@@ -198,7 +198,7 @@ class Display:
                 self.drone_texture,
                 arcade.XYWH(drone_x, drone_y, self.text_scaled_width, self.text_scaled_height)
             )
-            arcade.draw_text(str(drone_id), drone_x, drone_y - self.text_scaled_height // 2, arcade.color.BLACK, 10.0, width=self.id_maxwidth, anchor_x="center")
+            arcade.draw_text(str(drone_id), drone_x, drone_y - self.text_scaled_height // 2 - 5, arcade.color.BLACK, 10.0, width=self.id_maxwidth, anchor_x="center")
 
     def add_state(self, zones: list[Zone], connections: list[Connection], drones_delivered: list[Drone]) -> None:
 
@@ -214,7 +214,48 @@ class Display:
 
         for con in connections:
 
-            con_coor[con.name] = self.get_line_points(con.zone1, con.zone2, zones_coor)
+            x1, y1, x2, y2 = self.get_line_points(con.zone1, con.zone2, zones_coor)
+            con_coor[con.name] = (x1, y1, x2, y2)
+            drones_occupying: list[Drone] = [d for d in con.occupied if isinstance(d.current_zone, Connection)]
+            if not len(drones_occupying):
+                continue
+            print(x1, y1, x2, y2)
+            x_sign = 0
+            y_sign = 0
+            if x1 > x2:
+                x_sign = -1
+            elif x2 > x1:
+                x_sign = 1
+            if y1 > y2:
+                y_sign = -1
+            elif y2 > y1:
+                y_sign = 1
+            if x_sign != 0:
+                x1 += (self.msr.zone_sz // 2 * x_sign)
+                x2 += (self.msr.zone_sz // 2 * (-x_sign))
+            if y_sign != 0:
+                y1 += (self.msr.zone_sz // 2 * y_sign)
+                y2 += (self.msr.zone_sz // 2 * (-y_sign))
+            print(x1, y1, x2, y2)
+            drone_pos: list[tuple] = []
+            nb_drones_on_con = (
+                (x2 - x1) if (x2 - x1) > (y2 - y1)
+                else (y2 - y1)
+            )
+            print(nb_drones_on_con)
+            drone_startx = x1 + ((x2 - x1) // nb_drones_on_con // 2)
+            drone_starty = y1 + ((y2 - y1) // nb_drones_on_con // 2)
+            for _ in range(nb_drones_on_con):
+                drone_pos.append((drone_startx, drone_starty))
+                drone_startx += (x2 - x1) // nb_drones_on_con
+                drone_starty += (y2 - y1) // nb_drones_on_con
+            cur_pos = nb_drones_on_con - (nb_drones_on_con - len(drones_occupying)) // 2
+            for drone in drones_occupying:
+                drone_coor[drone.id] = drone_pos[cur_pos]
+                print(f"drone {drone.id} has been situated at pos {drone_pos[cur_pos]}\n")
+                cur_pos -= 1
+                if cur_pos < 0:
+                    cur_pos = nb_drones_on_con - (nb_drones_on_con - len(con.occupied)) // 2
 
         for zone in zones:
 
