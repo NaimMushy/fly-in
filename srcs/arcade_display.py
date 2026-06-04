@@ -1,11 +1,11 @@
 import arcade
 # import time
-import tkinter
+import tkinter as tk
 from .zones import Zone, Connection
 from .drones import Drone
 
 
-root = tkinter.Tk()
+root = tk.Tk()
 root.withdraw()
 WIDTH = root.winfo_screenwidth()
 HEIGHT = root.winfo_screenheight()
@@ -111,7 +111,7 @@ class Display:
             ) + 1
 
             self.px_sz = (HEIGHT // board_height if HEIGHT // board_height < WIDTH // board_width else WIDTH // board_width) + 1
-            self.zone_sz = self.px_sz // 2
+            self.zone_sz = (self.px_sz - 25) // 2
             self.padding = self.zone_sz // 2
 
     def __init__(self, zones: list[Zone]) -> None:
@@ -129,7 +129,8 @@ class Display:
             scale = ((self.msr.zone_sz - 4 - (5 * (max_drones_scale - 1))) // max_drones_scale) / self.drone_texture.width
             self.text_scaled_width = self.drone_texture.width * scale
             self.text_scaled_height = self.drone_texture.height * scale
-        print(self.text_scaled_width, self.text_scaled_height, max_drones_scale)
+        nb_drones_vertical = self.msr.zone_sz // self.text_scaled_height
+        self.id_maxwidth = (self.msr.zone_sz - (nb_drones_vertical * self.text_scaled_height)) // nb_drones_vertical
 
     def start_visu(self) -> None:
 
@@ -185,17 +186,19 @@ class Display:
                 2
             )
 
-        for zone_x, zone_y in current_state.zones.values():
+        for zone_name, (zone_x, zone_y) in current_state.zones.items():
 
             arcade.draw_rect_filled(arcade.rect.XYWH(zone_x, zone_y, self.msr.zone_sz + 10, self.msr.zone_sz + 10), arcade.color.WHITE)
             arcade.draw_rect_outline(arcade.rect.XYWH(zone_x, zone_y, self.msr.zone_sz, self.msr.zone_sz), arcade.color.BRITISH_RACING_GREEN, 2)
+            arcade.draw_text(zone_name, zone_x, zone_y - self.msr.zone_sz // 2 - 10, arcade.color.BLACK, 10.0, self.msr.zone_sz, anchor_x="center")
 
-        for drone_x, drone_y in current_state.drones.values():
+        for drone_id, (drone_x, drone_y) in current_state.drones.items():
 
             arcade.draw_texture_rect(
                 self.drone_texture,
                 arcade.XYWH(drone_x, drone_y, self.text_scaled_width, self.text_scaled_height)
             )
+            arcade.draw_text(str(drone_id), drone_x, drone_y - self.text_scaled_height // 2, arcade.color.BLACK, 10.0, width=self.id_maxwidth, anchor_x="center")
 
     def add_state(self, zones: list[Zone], connections: list[Connection], drones_delivered: list[Drone]) -> None:
 
