@@ -138,7 +138,7 @@ class Zone(BaseModel):
     x: int
     y: int
     zone_type: str = Field(default="normal")
-    color: str = Field(default="white")
+    color: str = Field(default="black")
     max_drones: int = Field(default=1, ge=0)
     connections: dict[str, Connection] = Field(default={})
     wish_to_occupy: list[any] = Field(default=[])

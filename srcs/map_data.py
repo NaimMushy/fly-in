@@ -572,7 +572,7 @@ class MapParser:
             )
 
         zone: str = "normal"
-        color: str = "white"
+        color: str = "black"
         max_drones: int = 1
 
         zone_defined: bool = False

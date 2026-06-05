@@ -145,14 +145,15 @@ def launch_drones(
             drone_map,
         )
         display: Display = Display(drone_map.hubs)
-        display.add_state(drone_map.hubs, drone_map.connections, [])
+        display.add_state(drone_map.hubs, drone_map.connections, [], "")
         while drone_monitor.drones:
 
             drone_monitor.update_drones()
-            display.add_state(drone_map.hubs, drone_map.connections, drone_monitor.drones_delivered)
+            display.add_state(drone_map.hubs, drone_map.connections, drone_monitor.drones_delivered, drone_monitor.current_turn_log)
 
         display.start_visu()
-
+        print(f"\nNUMBER OF TURNS : {drone_monitor.turns}\n")
+        input("Press any key to continue...")
         return 1
 
 #         new_state: State = State(info_mode, tui_display.console)

@@ -1,8 +1,10 @@
 import arcade
+import warnings
 # import time
 import tkinter as tk
 from .zones import Zone, Connection
 from .drones import Drone
+from .color_palette import ColorPalette
 
 NB_COMMANDS = 4
 
@@ -11,10 +13,12 @@ root.withdraw()
 WIDTH = root.winfo_screenwidth()
 HEIGHT = root.winfo_screenheight()
 root.quit()
-WIN_HEIGHT = HEIGHT - (20 * (NB_COMMANDS + 1))
+WIN_HEIGHT = HEIGHT - (20 * (NB_COMMANDS + 1)) - 40
 
 
 TARGET_FPS = 60
+
+warnings.filterwarnings("ignore")
 
 
 class DisplayView(arcade.View):
@@ -64,27 +68,13 @@ class DisplayView(arcade.View):
 
 class State:
 
-    def __init__(self, zones: dict, connections: dict, drones: dict, turn_nb: int) -> None:
+    def __init__(self, zones: dict, connections: dict, drones: dict, turn_nb: int, turn_log: str) -> None:
 
         self.zones: dict = zones
         self.connections: dict = connections
         self.drones: dict = drones
         self.turn_nb: int = turn_nb
-
-    def display_information(self) -> None:
-
-        print(f"==== TURN {self.turn_nb} ====\n")
-        fst: bool = True
-
-        for drone in [d for d in self.drones.keys() if not d.waiting]:
-
-            if not fst:
-                print(" ")
-
-            print(f"D{drone.id}-{drone.occupying.name}", end="")
-            fst = False
-
-        print()
+        self.turn_log: str = turn_log
 
 
 class Display:
@@ -143,8 +133,8 @@ class Display:
 
     def get_line_points(self, zone1: Zone, zone2: Zone, zones_coor: dict) -> tuple[int, int, int, int]:
 
-        zone1_x, zone1_y = zones_coor[zone1.name]
-        zone2_x, zone2_y = zones_coor[zone2.name]
+        zone1_x, zone1_y, _ = zones_coor[zone1.name]
+        zone2_x, zone2_y, _ = zones_coor[zone2.name]
         return zone1_x, zone1_y, zone2_x, zone2_y
 #         x_offset = self.msr.zone_sz // 2 + 5
 #         y_offset = self.msr.zone_sz // 2 + 5
@@ -177,7 +167,7 @@ class Display:
 
         current_state: State = self.states[self.cur_state_id]
 
-        commands_height = HEIGHT - (max([y for x, y in current_state.zones.values()]) + self.msr.zone_sz // 2 + 40)
+        commands_height = HEIGHT - (max([y for x, y, c in current_state.zones.values()]) + self.msr.zone_sz // 2 + 40)
 
         arcade.draw_line(
             0,
@@ -189,18 +179,24 @@ class Display:
         )
 
         arcade.draw_line(
-            WIDTH // 2,
+            WIDTH // 3,
             HEIGHT - commands_height,
-            WIDTH // 2,
+            WIDTH // 3,
             HEIGHT,
             arcade.color.BLACK,
             2
         )
         text_y: int = HEIGHT - commands_height // (NB_COMMANDS + 2)
-        arcade.draw_text("USER COMMANDS:", WIDTH // 4, text_y, arcade.color.BLACK, 14.0, anchor_x="center")
+        arcade.draw_text("USER COMMANDS:", WIDTH // 6, text_y, arcade.color.BLACK, 14.0, anchor_x="center")
+        text_y -= 10
         for command in [" ➤ space: pause", " ➤ arrow up: speed up", " ➤ arrow down: slow down", " ➤ escape: stop the simulation"]:
             text_y -= commands_height // (NB_COMMANDS * 3)
-            arcade.draw_text(command, WIDTH // 8, text_y, arcade.color.BLACK, 10.0)
+            arcade.draw_text(command, WIDTH // 12, text_y, arcade.color.BLACK, 12.0)
+
+        text_y = HEIGHT - commands_height // 3
+        arcade.draw_text("CURRENT TURN ACTION:", WIDTH - WIDTH // 3, text_y, arcade.color.BLACK, 14.0, anchor_x="center")
+        text_y -= 30
+        arcade.draw_text(current_state.turn_log, WIDTH - WIDTH // 3, text_y, arcade.color.BLACK, 12.0, anchor_x="center")
 
         for x1, y1, x2, y2 in current_state.connections.values():
 
@@ -213,11 +209,11 @@ class Display:
                 2
             )
 
-        for zone_name, (zone_x, zone_y) in current_state.zones.items():
+        for zone_name, (zone_x, zone_y, zone_color) in current_state.zones.items():
 
-            arcade.draw_rect_filled(arcade.rect.XYWH(zone_x, zone_y, self.msr.zone_sz + 10, self.msr.zone_sz + 10), arcade.color.WHITE)
-            arcade.draw_rect_outline(arcade.rect.XYWH(zone_x, zone_y, self.msr.zone_sz, self.msr.zone_sz), arcade.color.BRITISH_RACING_GREEN, 2)
-            arcade.draw_text(zone_name, zone_x, zone_y - self.msr.zone_sz // 2 - 10, arcade.color.BLACK, 10.0, self.msr.zone_sz, anchor_x="center")
+            arcade.draw_rect_filled(arcade.rect.XYWH(zone_x, zone_y, self.msr.zone_sz + 10, self.msr.zone_sz + 10), ColorPalette.get_color("white"))
+            arcade.draw_rect_outline(arcade.rect.XYWH(zone_x, zone_y, self.msr.zone_sz, self.msr.zone_sz), ColorPalette.get_color(zone_color), 2)
+            arcade.draw_text(zone_name, zone_x, zone_y - self.msr.zone_sz // 2 - 15, ColorPalette.get_color(zone_color), 10.0, self.msr.zone_sz, anchor_x="center")
 
         for drone_id, (drone_x, drone_y) in current_state.drones.items():
 
@@ -227,9 +223,9 @@ class Display:
             )
             arcade.draw_text(str(drone_id), drone_x, drone_y - self.text_scaled_height // 2 - 5, arcade.color.BLACK, 10.0, width=self.id_maxwidth, anchor_x="center")
 
-    def add_state(self, zones: list[Zone], connections: list[Connection], drones_delivered: list[Drone]) -> None:
+    def add_state(self, zones: list[Zone], connections: list[Connection], drones_delivered: list[Drone], turn_log: str) -> None:
 
-        zones_coor: dict[str, tuple[int, int]] = {}
+        zones_coor: dict[str, tuple[int, int, str]] = {}
         con_coor: dict[str, tuple[int, int, int, int]] = {}
         drone_coor: dict[int, tuple[int, int]] = {}
 
@@ -237,7 +233,7 @@ class Display:
 
             zone_x = (zone.x + self.msr.x_offset) * self.msr.px_sz + self.msr.padding + self.msr.zone_sz // 2
             zone_y = (zone.y + self.msr.y_offset) * self.msr.px_sz + self.msr.padding + self.msr.zone_sz // 2
-            zones_coor[zone.name] = (zone_x, zone_y)
+            zones_coor[zone.name] = (zone_x, zone_y, zone.color)
 
         for con in connections:
 
@@ -302,4 +298,4 @@ class Display:
                 drone_coor[drone.id] = (drone_x, drone_y)
                 drone_x += self.text_scaled_width + 5
 
-        self.states.append(State(zones_coor, con_coor, drone_coor, len(self.states) - 1))
+        self.states.append(State(zones_coor, con_coor, drone_coor, len(self.states) - 1, turn_log))

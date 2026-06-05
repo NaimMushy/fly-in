@@ -575,19 +575,22 @@ class DroneMonitor:
 
         # state.drones_delivered = []
         goal_occupancy: list[int] = []
+        self.current_turn_log: str = ""
 
         for drone in moving_drones:
 
-            # if drone != moving_drones[0]:
-            #     state.drone_moves += " "
+            if drone != moving_drones[0]:
+                self.current_turn_log += " "
 
-            # state.drone_moves += f"D{drone.id}-{drone.current_zone.name}"
+            self.current_turn_log += f"D{drone.id}-{drone.current_zone.name}"
 
             if drone.current_zone == drone.goal:
 
                 goal_occupancy.append(drone.id)
                 self.drones_delivered.append(drone)
                 self.drones.remove(drone)
+
+        print(self.current_turn_log)
 
         # if len(goal_occupancy) > 0:
         #     state.zones_occupied[self.drone_map.end_hub.name] = goal_occupancy
