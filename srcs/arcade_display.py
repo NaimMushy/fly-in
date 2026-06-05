@@ -4,12 +4,14 @@ import tkinter as tk
 from .zones import Zone, Connection
 from .drones import Drone
 
+NB_COMMANDS = 4
 
 root = tk.Tk()
 root.withdraw()
 WIDTH = root.winfo_screenwidth()
 HEIGHT = root.winfo_screenheight()
 root.quit()
+WIN_HEIGHT = HEIGHT - (30 * (NB_COMMANDS + 1))
 
 
 TARGET_FPS = 60
@@ -110,7 +112,7 @@ class Display:
                 max_y if min_y >= 0 else (max_y - min_y)
             ) + 1
 
-            self.px_sz = (HEIGHT // board_height if HEIGHT // board_height < WIDTH // board_width else WIDTH // board_width) + 1
+            self.px_sz = (WIN_HEIGHT // board_height if WIN_HEIGHT // board_height < WIDTH // board_width else WIDTH // board_width) + 1
             self.zone_sz = (self.px_sz - 25) // 2
             self.padding = self.zone_sz // 2
 
@@ -174,6 +176,21 @@ class Display:
     def draw_state(self) -> None:
 
         current_state: State = self.states[self.cur_state_id]
+
+        arcade.draw_line(
+            WIDTH // 2,
+            WIN_HEIGHT,
+            WIDTH // 2,
+            HEIGHT,
+            arcade.color.BLACK,
+            2
+        )
+        text_y: int = HEIGHT - 30
+        print(HEIGHT, WIN_HEIGHT)
+        arcade.draw_text("USER COMMANDS:", WIDTH // 4, text_y, arcade.color.BLACK, 14.0, anchor_x="center")
+        for command in [" ➤ space: pause", " ➤ arrow up: speed up", " ➤ arrow down: slow down", " ➤ escape: stop the simulation"]:
+            text_y -= 20
+            arcade.draw_text(command, WIDTH // 8, text_y, arcade.color.BLACK, 10.0)
 
         for x1, y1, x2, y2 in current_state.connections.values():
 
