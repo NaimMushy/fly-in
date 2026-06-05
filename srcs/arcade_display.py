@@ -6,17 +6,18 @@ from .zones import Zone, Connection
 from .drones import Drone
 from .color_palette import ColorPalette
 
-NB_COMMANDS = 4
+NB_COMMANDS = 6
 
 root = tk.Tk()
 root.withdraw()
 WIDTH = root.winfo_screenwidth()
 HEIGHT = root.winfo_screenheight()
 root.quit()
-WIN_HEIGHT = HEIGHT - (20 * (NB_COMMANDS + 1)) - 40
-
-
+MAX_WIDGET_HEIGHT = HEIGHT // 4 + 40
+WIN_HEIGHT = HEIGHT - MAX_WIDGET_HEIGHT
 TARGET_FPS = 60
+arcade.load_font("ByteBounce.ttf")
+CUSTOM_FONT = "ByteBounce"
 
 warnings.filterwarnings("ignore")
 
@@ -32,10 +33,11 @@ class DisplayView(arcade.View):
         self.target_fps: int = 60
         self.frame_count: int = 0
         self.on_pause: bool = False
+        self.step_by_step: bool = False
 
     def on_update(self, delta_time: float = 1 / 60):
 
-        if self.on_pause:
+        if self.on_pause or self.step_by_step:
             return
         self.frame_count += 1
         if self.frame_count < self.target_fps:
@@ -47,7 +49,7 @@ class DisplayView(arcade.View):
 
     def on_draw(self):
 
-        if self.on_pause:
+        if self.on_pause and not self.step_by_step:
             return
         self.clear()
         self.display.draw_state()
@@ -56,12 +58,25 @@ class DisplayView(arcade.View):
 
         if key == arcade.key.SPACE:
             self.on_pause = not (self.on_pause)
+            self.step_by_step = False
         if key == arcade.key.UP:
-            if self.target_fps / 1.5 >= 20:
+            if self.target_fps / 1.5 >= 2:
                 self.target_fps = int(self.target_fps / 1.5)
         if key == arcade.key.DOWN:
             if self.target_fps * 1.5 <= 180:
                 self.target_fps = int(self.target_fps * 1.5)
+        if key == arcade.key.LEFT:
+            self.step_by_step = True
+            self.on_pause = True
+            if self.display.cur_state_id - 1 >= 0:
+                self.display.cur_state_id -= 1
+        if key == arcade.key.RIGHT:
+            self.step_by_step = True
+            self.on_pause = True
+            if self.display.cur_state_id + 1 == len(self.display.states):
+                self.display.cur_state_id = 0
+            else:
+                self.display.cur_state_id += 1
         if key == arcade.key.ESCAPE:
             arcade.close_window()
 
@@ -97,14 +112,18 @@ class Display:
 
             board_width: int = (
                 max_x if min_x >= 0 else (max_x - min_x)
-            ) + 1
+            ) + 2
             board_height: int = (
                 max_y if min_y >= 0 else (max_y - min_y)
-            ) + 1
+            ) + 2
 
-            self.px_sz = (WIN_HEIGHT // board_height if WIN_HEIGHT // board_height < WIDTH // board_width else WIDTH // board_width) + 1
+            self.px_sz = (WIN_HEIGHT // board_height if WIN_HEIGHT // board_height < WIDTH // board_width else WIDTH // board_width)
             self.zone_sz = (self.px_sz - 25) // 2
-            self.padding = self.zone_sz // 2
+            self.padding = self.zone_sz // 5
+            while (max_x + self.x_offset) * self.px_sz >= WIDTH:
+                self.x_offset -= 1
+            while (max_y + self.y_offset) * self.px_sz >= WIN_HEIGHT:
+                self.y_offset -= 1
 
     def __init__(self, zones: list[Zone]) -> None:
 
@@ -115,12 +134,12 @@ class Display:
         max_drones_scale = max([z.max_drones for z in zones])
         scale = ((self.msr.zone_sz - 4 - (5 * (max_drones_scale - 1))) // max_drones_scale) / self.drone_texture.width
         self.text_scaled_width = self.drone_texture.width * scale
-        self.text_scaled_height = (self.drone_texture.height + 20) * scale
-        while self.text_scaled_width < 20 and self.text_scaled_height < 20 and max_drones_scale > 1:
+        self.text_scaled_height = (self.drone_texture.height + 15) * scale
+        while self.text_scaled_width < 10 and self.text_scaled_height < 10 and max_drones_scale > 1:
             max_drones_scale -= 1
             scale = ((self.msr.zone_sz - 4 - (5 * (max_drones_scale - 1))) // max_drones_scale) / self.drone_texture.width
             self.text_scaled_width = self.drone_texture.width * scale
-            self.text_scaled_height = (self.drone_texture.height + 20) * scale
+            self.text_scaled_height = (self.drone_texture.height + 15) * scale
         nb_drones_vertical = self.msr.zone_sz // self.text_scaled_height
         self.id_maxwidth = (self.msr.zone_sz - (nb_drones_vertical * self.text_scaled_height)) // nb_drones_vertical
 
@@ -167,36 +186,57 @@ class Display:
 
         current_state: State = self.states[self.cur_state_id]
 
-        commands_height = HEIGHT - (max([y for x, y, c in current_state.zones.values()]) + self.msr.zone_sz // 2 + 40)
-
         arcade.draw_line(
             0,
-            HEIGHT - commands_height,
+            HEIGHT - MAX_WIDGET_HEIGHT,
             WIDTH,
-            HEIGHT - commands_height,
-            arcade.color.BLACK,
-            2
+            HEIGHT - MAX_WIDGET_HEIGHT,
+            arcade.color.AFRICAN_VIOLET,
+            30
+        )
+        arcade.draw_line(
+            0,
+            HEIGHT - MAX_WIDGET_HEIGHT,
+            WIDTH,
+            HEIGHT - MAX_WIDGET_HEIGHT,
+            arcade.color.CYBER_GRAPE,
+            3
         )
 
         arcade.draw_line(
             WIDTH // 3,
-            HEIGHT - commands_height,
+            HEIGHT - MAX_WIDGET_HEIGHT + 15,
             WIDTH // 3,
             HEIGHT,
-            arcade.color.BLACK,
-            2
+            arcade.color.AFRICAN_VIOLET,
+            30
         )
-        text_y: int = HEIGHT - commands_height // (NB_COMMANDS + 2)
-        arcade.draw_text("USER COMMANDS:", WIDTH // 6, text_y, arcade.color.BLACK, 14.0, anchor_x="center")
-        text_y -= 10
-        for command in [" ➤ space: pause", " ➤ arrow up: speed up", " ➤ arrow down: slow down", " ➤ escape: stop the simulation"]:
-            text_y -= commands_height // (NB_COMMANDS * 3)
-            arcade.draw_text(command, WIDTH // 12, text_y, arcade.color.BLACK, 12.0)
+        arcade.draw_line(
+            WIDTH // 3,
+            HEIGHT - MAX_WIDGET_HEIGHT,
+            WIDTH // 3,
+            HEIGHT,
+            arcade.color.CYBER_GRAPE,
+            3
+        )
+        title_height = MAX_WIDGET_HEIGHT // (NB_COMMANDS + 2) + 40
+        text_y: int = HEIGHT - title_height + 20
+        arcade.draw_text("USER COMMANDS", WIDTH // 6, text_y, arcade.color.AFRICAN_VIOLET, 20.0, anchor_x="center", font_name=CUSTOM_FONT)
+        text_y -= 40
+        commands_height = MAX_WIDGET_HEIGHT - title_height - 40
+        for command in [" -> space : pause", " -> arrow up : speed up", " -> arrow down : slow down", " -> arrow left : previous step", " -> arrow right : next step", " -> escape : stop the simulation"]:
+            arcade.draw_text(command, WIDTH // 12, text_y, arcade.color.AFRICAN_VIOLET, 16.0, font_name=CUSTOM_FONT)
+            text_y -= commands_height // NB_COMMANDS
 
-        text_y = HEIGHT - commands_height // 3
-        arcade.draw_text("CURRENT TURN ACTION:", WIDTH - WIDTH // 3, text_y, arcade.color.BLACK, 14.0, anchor_x="center")
-        text_y -= 30
-        arcade.draw_text(current_state.turn_log, WIDTH - WIDTH // 3, text_y, arcade.color.BLACK, 12.0, anchor_x="center")
+        logs: list[str] = current_state.turn_log.split(" ")
+        text_y = HEIGHT - MAX_WIDGET_HEIGHT // 5 - 20
+        arcade.draw_text("CURRENT TURN ACTION", WIDTH - WIDTH // 3, text_y, arcade.color.AFRICAN_VIOLET, 20.0, anchor_x="center", font_name=CUSTOM_FONT)
+        text_y -= 40
+        for log in logs:
+            arcade.draw_text(log, WIDTH - WIDTH // 3, text_y, arcade.color.AFRICAN_VIOLET, 16.0, anchor_x="center", font_name=CUSTOM_FONT)
+            text_y -= 20
+            if text_y < (HEIGHT - MAX_WIDGET_HEIGHT + 20):
+                break
 
         for x1, y1, x2, y2 in current_state.connections.values():
 
@@ -213,7 +253,7 @@ class Display:
 
             arcade.draw_rect_filled(arcade.rect.XYWH(zone_x, zone_y, self.msr.zone_sz + 10, self.msr.zone_sz + 10), ColorPalette.get_color("white"))
             arcade.draw_rect_outline(arcade.rect.XYWH(zone_x, zone_y, self.msr.zone_sz, self.msr.zone_sz), ColorPalette.get_color(zone_color), 2)
-            arcade.draw_text(zone_name, zone_x, zone_y - self.msr.zone_sz // 2 - 15, ColorPalette.get_color(zone_color), 10.0, self.msr.zone_sz, anchor_x="center")
+            arcade.draw_text(zone_name, zone_x, zone_y - self.msr.zone_sz // 2 - 15, ColorPalette.get_color(zone_color), 14.0, self.msr.zone_sz, anchor_x="center", font_name=CUSTOM_FONT)
 
         for drone_id, (drone_x, drone_y) in current_state.drones.items():
 
@@ -221,7 +261,7 @@ class Display:
                 self.drone_texture,
                 arcade.XYWH(drone_x, drone_y, self.text_scaled_width, self.text_scaled_height)
             )
-            arcade.draw_text(str(drone_id), drone_x, drone_y - self.text_scaled_height // 2 - 5, arcade.color.BLACK, 10.0, width=self.id_maxwidth, anchor_x="center")
+            arcade.draw_text(str(drone_id), drone_x, drone_y - self.text_scaled_height // 2, arcade.color.BLACK, (5 + (self.text_scaled_height / 8)), width=self.id_maxwidth, anchor_x="center", font_name=CUSTOM_FONT)
 
     def add_state(self, zones: list[Zone], connections: list[Connection], drones_delivered: list[Drone], turn_log: str) -> None:
 
@@ -231,8 +271,8 @@ class Display:
 
         for zone in zones:
 
-            zone_x = (zone.x + self.msr.x_offset) * self.msr.px_sz + self.msr.padding + self.msr.zone_sz // 2
-            zone_y = (zone.y + self.msr.y_offset) * self.msr.px_sz + self.msr.padding + self.msr.zone_sz // 2
+            zone_x = (zone.x + self.msr.x_offset) * self.msr.px_sz + self.msr.padding + (self.msr.zone_sz // 2)
+            zone_y = (zone.y + self.msr.y_offset) * self.msr.px_sz + self.msr.padding + (self.msr.zone_sz // 2) + 50
             zones_coor[zone.name] = (zone_x, zone_y, zone.color)
 
         for con in connections:
@@ -242,41 +282,42 @@ class Display:
             drones_occupying: list[Drone] = [d for d in con.occupied if isinstance(d.current_zone, Connection)]
             if not len(drones_occupying):
                 continue
-            x_sign = 0
-            y_sign = 0
+            x_start = x1
+            y_start = y1
+            x_end = x2
+            y_end = y2
             if x1 > x2:
-                x_sign = -1
-            elif x2 > x1:
-                x_sign = 1
+                x_start = x2
+                x_end = x1
             if y1 > y2:
-                y_sign = -1
-            elif y2 > y1:
-                y_sign = 1
-            if x_sign != 0:
-                x1 += (self.msr.zone_sz // 2 * x_sign)
-                x2 += (self.msr.zone_sz // 2 * (-x_sign))
-            if y_sign != 0:
-                y1 += (self.msr.zone_sz // 2 * y_sign)
-                y2 += (self.msr.zone_sz // 2 * (-y_sign))
+                y_start = y2
+                y_end = y1
+            if x1 != x2:
+                x_start += self.msr.zone_sz // 2
+                x_end -= self.msr.zone_sz // 2
+            if y1 != y2:
+                y_start += self.msr.zone_sz // 2
+                y_end -= self.msr.zone_sz // 2
             drone_pos: list[tuple] = []
-            nb_drones_on_con = abs(
-                (x2 - x1) if (x2 - x1) > (y2 - y1)
-                else (y2 - y1)
+            nb_drones_on_con = (
+                (x_start - x_end) // self.text_scaled_width
+                if ((x_start - x_end) // self.text_scaled_width) < ((y_start - y_end) // self.text_scaled_height)
+                else (y_start - y_end) // self.text_scaled_height
             )
             if nb_drones_on_con < 1:
                 nb_drones_on_con = 1
-            drone_startx = x1 + ((x2 - x1) // nb_drones_on_con // 2)
-            drone_starty = y1 + ((y2 - y1) // nb_drones_on_con // 2)
+            drone_startx = x_start + ((x_end - x_start) // nb_drones_on_con) // 2
+            drone_starty = y_start + ((y_end - y_start) // nb_drones_on_con) // 2
             for _ in range(nb_drones_on_con):
                 drone_pos.append((drone_startx, drone_starty))
-                drone_startx += (x2 - x1) // nb_drones_on_con
-                drone_starty += (y2 - y1) // nb_drones_on_con
-            cur_pos = nb_drones_on_con - (nb_drones_on_con - len(drones_occupying)) // 2
+                drone_startx += ((x_end - x_start) // nb_drones_on_con)
+                drone_starty += ((y_end - y_start) // nb_drones_on_con)
+            cur_pos = len(drone_pos) - len(drone_pos) // len(drones_occupying)
             for drone in drones_occupying:
                 drone_coor[drone.id] = drone_pos[cur_pos - 1]
                 cur_pos -= 1
                 if cur_pos <= 0:
-                    cur_pos = nb_drones_on_con - (nb_drones_on_con - len(drones_occupying)) // 2
+                    break
 
         for zone in zones:
 
