@@ -11,7 +11,7 @@ root.withdraw()
 WIDTH = root.winfo_screenwidth()
 HEIGHT = root.winfo_screenheight()
 root.quit()
-WIN_HEIGHT = HEIGHT - (30 * (NB_COMMANDS + 1))
+WIN_HEIGHT = HEIGHT - (20 * (NB_COMMANDS + 1))
 
 
 TARGET_FPS = 60
@@ -177,19 +177,29 @@ class Display:
 
         current_state: State = self.states[self.cur_state_id]
 
+        commands_height = HEIGHT - (max([y for x, y in current_state.zones.values()]) + self.msr.zone_sz // 2 + 40)
+
+        arcade.draw_line(
+            0,
+            HEIGHT - commands_height,
+            WIDTH,
+            HEIGHT - commands_height,
+            arcade.color.BLACK,
+            2
+        )
+
         arcade.draw_line(
             WIDTH // 2,
-            WIN_HEIGHT,
+            HEIGHT - commands_height,
             WIDTH // 2,
             HEIGHT,
             arcade.color.BLACK,
             2
         )
-        text_y: int = HEIGHT - 30
-        print(HEIGHT, WIN_HEIGHT)
+        text_y: int = HEIGHT - commands_height // (NB_COMMANDS + 2)
         arcade.draw_text("USER COMMANDS:", WIDTH // 4, text_y, arcade.color.BLACK, 14.0, anchor_x="center")
         for command in [" ➤ space: pause", " ➤ arrow up: speed up", " ➤ arrow down: slow down", " ➤ escape: stop the simulation"]:
-            text_y -= 20
+            text_y -= commands_height // (NB_COMMANDS * 3)
             arcade.draw_text(command, WIDTH // 8, text_y, arcade.color.BLACK, 10.0)
 
         for x1, y1, x2, y2 in current_state.connections.values():
@@ -236,7 +246,6 @@ class Display:
             drones_occupying: list[Drone] = [d for d in con.occupied if isinstance(d.current_zone, Connection)]
             if not len(drones_occupying):
                 continue
-            print(x1, y1, x2, y2)
             x_sign = 0
             y_sign = 0
             if x1 > x2:
@@ -253,13 +262,13 @@ class Display:
             if y_sign != 0:
                 y1 += (self.msr.zone_sz // 2 * y_sign)
                 y2 += (self.msr.zone_sz // 2 * (-y_sign))
-            print(x1, y1, x2, y2)
             drone_pos: list[tuple] = []
-            nb_drones_on_con = (
+            nb_drones_on_con = abs(
                 (x2 - x1) if (x2 - x1) > (y2 - y1)
                 else (y2 - y1)
             )
-            print(nb_drones_on_con)
+            if nb_drones_on_con < 1:
+                nb_drones_on_con = 1
             drone_startx = x1 + ((x2 - x1) // nb_drones_on_con // 2)
             drone_starty = y1 + ((y2 - y1) // nb_drones_on_con // 2)
             for _ in range(nb_drones_on_con):
@@ -268,11 +277,10 @@ class Display:
                 drone_starty += (y2 - y1) // nb_drones_on_con
             cur_pos = nb_drones_on_con - (nb_drones_on_con - len(drones_occupying)) // 2
             for drone in drones_occupying:
-                drone_coor[drone.id] = drone_pos[cur_pos]
-                print(f"drone {drone.id} has been situated at pos {drone_pos[cur_pos]}\n")
+                drone_coor[drone.id] = drone_pos[cur_pos - 1]
                 cur_pos -= 1
-                if cur_pos < 0:
-                    cur_pos = nb_drones_on_con - (nb_drones_on_con - len(con.occupied)) // 2
+                if cur_pos <= 0:
+                    cur_pos = nb_drones_on_con - (nb_drones_on_con - len(drones_occupying)) // 2
 
         for zone in zones:
 
