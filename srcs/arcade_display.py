@@ -4,38 +4,42 @@ import tkinter as tk
 from .zones import Zone, Connection
 from .drones import Drone
 from .color_palette import ColorPalette
+from typing import Any as any
 
 
-root = tk.Tk()
+root: tk.Tk = tk.Tk()
 root.withdraw()
-WIDTH = root.winfo_screenwidth()
-HEIGHT = root.winfo_screenheight()
+WIDTH: int = root.winfo_screenwidth()
+HEIGHT: int = root.winfo_screenheight()
 root.quit()
 
-NB_COMMANDS = 6
-MAX_WIDGET_HEIGHT = HEIGHT // 4 + 40
-WIN_HEIGHT = HEIGHT - MAX_WIDGET_HEIGHT
-TARGET_FPS = 60
-arcade.load_font("ByteBounce.ttf")
-CUSTOM_FONT = "ByteBounce"
+NB_COMMANDS: int = 6
+MAX_WIDGET_HEIGHT: int = HEIGHT // 4 + 40
+WIN_HEIGHT: int = HEIGHT - MAX_WIDGET_HEIGHT
+TARGET_FPS: float = 60
+arcade.load_font("srcs/assets/ByteBounce.ttf")
+CUSTOM_FONT: str = "ByteBounce"
+DRONE_IMAGE: str = "srcs/assets/drone_pixel_art.avif"
 
 warnings.filterwarnings("ignore")
 
 
 class DisplayView(arcade.View):
 
-    def __init__(self, display: "Display") -> None:
+    def __init__(self, display: "ArcadeDisplay") -> None:
 
         super().__init__()
 
-        self.display: "Display" = display
-        self.background_color = ColorPalette.get_color("white")
-        self.target_fps: int = 60
+        self.display: "ArcadeDisplay" = display
+        self.background_color: any = (
+            ColorPalette.get_color("white")
+        )
+        self.target_fps: float = 60
         self.frame_count: int = 0
         self.on_pause: bool = False
         self.step_by_step: bool = False
 
-    def on_update(self, delta_time: float = 1 / 60):
+    def on_update(self, delta_time: float = 1 / 60) -> None:
 
         if self.on_pause or self.step_by_step:
             return
@@ -51,7 +55,7 @@ class DisplayView(arcade.View):
         if self.display.cur_state_id == len(self.display.states):
             self.display.cur_state_id = 0
 
-    def on_draw(self):
+    def on_draw(self) -> None:
 
         if self.on_pause and not self.step_by_step:
             return
@@ -59,7 +63,7 @@ class DisplayView(arcade.View):
         self.clear()
         self.display.draw_state()
 
-    def on_key_press(self, key, modifiers):
+    def on_key_press(self, key: int, modifiers: int) -> None:
 
         if key == arcade.key.SPACE:
 
@@ -118,7 +122,7 @@ class State:
         self.turn_log: str = turn_log
 
 
-class Display:
+class ArcadeDisplay:
 
     class Measures:
 
@@ -160,13 +164,13 @@ class Display:
 
         def calculate_drone_scale(
             cls,
-            drone_texture,
+            drone_texture: arcade.texture.texture.Texture,
             zones: list[Zone]
         ) -> tuple[float, float]:
 
-            max_drones_scale = max([z.max_drones for z in zones])
+            max_drones_scale: int = max([z.max_drones for z in zones])
 
-            scale = (
+            scale: float = (
                 (cls.zone_sz - 4 - (5 * (max_drones_scale - 1)))
                 // max_drones_scale
             ) / drone_texture.width
@@ -225,9 +229,9 @@ class Display:
                 y_start += cls.zone_sz // 2
                 y_end -= cls.zone_sz // 2
 
-            drone_pos: list[tuple] = []
+            drone_pos: list[tuple[int, int]] = []
 
-            nb_drones_on_con = (
+            nb_drones_on_con: int = int(
                 (x_start - x_end) // width
                 if ((x_start - x_end) // width) < ((y_start - y_end) // height)
                 else (y_start - y_end) // height
@@ -275,8 +279,8 @@ class Display:
             zone_y: int
             zone_x, zone_y = zone_coor
 
-            drone_x = zone_x - cls.zone_sz // 2 + 2 + width // 2
-            drone_y = zone_y + cls.zone_sz // 2 - 2 - height // 2
+            drone_x: float = zone_x - cls.zone_sz // 2 + 2 + width // 2
+            drone_y: float = zone_y + cls.zone_sz // 2 - 2 - height // 2
 
             drone_coor: dict[int, tuple[int, int]] = {}
 
@@ -292,7 +296,7 @@ class Display:
                     drone_y = zone_y + cls.zone_sz // 2 - 2 - height // 2
                     drone_x = zone_x - cls.zone_sz // 2 + 2 + width // 2
 
-                drone_coor[drone.id] = (drone_x, drone_y)
+                drone_coor[drone.id] = (int(drone_x), int(drone_y))
 
                 drone_x += width + 5
 
@@ -303,8 +307,9 @@ class Display:
         self.msr = self.Measures(zones)
         self.states: list[State] = []
         self.cur_state_id: int = 0
-        self.drone_texture = arcade.load_texture("drone_pixel_art.avif")
-        print(type(self.drone_texture))
+        self.drone_texture: arcade.texture.texture.Texture = (
+            arcade.load_texture(DRONE_IMAGE)
+        )
 
         self.text_scaled_width: float
         self.text_scaled_height: float
@@ -315,7 +320,9 @@ class Display:
 
     def start_visu(self) -> None:
 
-        window = arcade.Window(WIDTH, HEIGHT, "LET'S FLY IN", resizable=True)
+        window: arcade.application.Window = (
+            arcade.Window(WIDTH, HEIGHT, "LET'S FLY IN", resizable=True)
+        )
         gameview: DisplayView = DisplayView(self)
         window.show_view(gameview)
         arcade.run()

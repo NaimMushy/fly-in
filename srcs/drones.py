@@ -1,7 +1,6 @@
 from .zones import Zone, Connection
 from .map_data import Map
 from .path import Path, PathFinder
-from .state import State
 
 
 class Drone:
@@ -553,27 +552,6 @@ class DroneMonitor:
             and not drone.waiting
         ]
 
-#         state.nb_drone_moved = len(moving_drones)
-# 
-#         for drone in self.drones:
-# 
-#             for occupied in drone.occupying:
-# 
-#                 if (
-#                     (
-#                         isinstance(occupied, Connection)
-#                         and drone.next_zone.zone_type != "restricted"
-#                     )
-#                     or occupied == drone.goal
-#                 ):
-#                     continue
-# 
-#                 if occupied.name not in state.zones_occupied.keys():
-#                     state.zones_occupied[occupied.name] = []
-# 
-#                 state.zones_occupied[occupied.name].append(drone.id)
-
-        # state.drones_delivered = []
         goal_occupancy: list[int] = []
         self.current_turn_log: str = ""
 
@@ -592,10 +570,4 @@ class DroneMonitor:
 
         print(self.current_turn_log)
 
-        # if len(goal_occupancy) > 0:
-        #     state.zones_occupied[self.drone_map.end_hub.name] = goal_occupancy
-
-        # state.drones_delivered = [d.id for d in self.drones_delivered]
-
         self.turns += 1
-        # state.turn = self.turns
