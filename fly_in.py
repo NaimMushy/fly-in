@@ -30,7 +30,7 @@ def main() -> None:
     """
 
     Launches a simulation of drone routing
-    using pathfinding algorithm and a tui display.
+    using pathfinding algorithm and a mix of tui display and arcade display.
 
     """
 
@@ -104,7 +104,8 @@ def launch_drones(
     """
 
     Goes through every step of the simulation
-    and saves it in a specific state.
+    and shows it either through terminal output
+    or a visual representation using the arcade library.
 
     Parameters
     ----------

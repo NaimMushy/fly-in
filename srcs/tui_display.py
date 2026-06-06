@@ -6,8 +6,7 @@ class TuiDisplay:
 
     """
 
-    A class used to display a drone simulation
-    with zones and connections in the terminal.
+    A class used to display a menu and user interaction in the terminal.
 
     """
 

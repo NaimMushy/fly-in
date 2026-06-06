@@ -26,7 +26,25 @@ warnings.filterwarnings("ignore")
 
 class DisplayView(arcade.View):
 
+    """
+
+    A class inheriting from the arcade.View parent class
+    that serves as a custom view for the drone display.
+
+    """
+
     def __init__(self, display: "ArcadeDisplay") -> None:
+
+        """
+
+        Initializes the attributes of a DisplayView object.
+
+        Parameters
+        ----------
+        display: ArcadeDisplay
+            The ArcadeDisplay instance associated with this view.
+
+        """
 
         super().__init__()
 
@@ -40,6 +58,19 @@ class DisplayView(arcade.View):
         self.step_by_step: bool = False
 
     def on_update(self, delta_time: float = 1 / 60) -> None:
+
+        """
+
+        The implementation of the on_update method
+        found in the parent class arcade.View
+        which updates all the needed variables of the display.
+
+        Parameters
+        ----------
+        delta_time: float
+            The frequency of the view update.
+
+        """
 
         if self.on_pause or self.step_by_step:
             return
@@ -57,6 +88,14 @@ class DisplayView(arcade.View):
 
     def on_draw(self) -> None:
 
+        """
+
+        The implementation of the on_draw method
+        found in the parent class arcade.View
+        which displays the view on the screen.
+
+        """
+
         if self.on_pause and not self.step_by_step:
             return
 
@@ -64,6 +103,22 @@ class DisplayView(arcade.View):
         self.display.draw_state()
 
     def on_key_press(self, key: int, modifiers: int) -> None:
+
+        """
+
+        The implementation of the on_key_press method
+        found in the parent class arcade.View
+        which handles the key events from the user.
+
+        Parameters
+        ----------
+        key: int
+            The keycode corresponding to the key pressed by the user.
+        modifiers: int
+            A variable used by the parent class in the original method
+            to handle key events.
+
+        """
 
         if key == arcade.key.SPACE:
 
@@ -106,6 +161,15 @@ class DisplayView(arcade.View):
 
 class State:
 
+    """
+
+    A class that stores the information
+    relevant to a certain step in the simulation,
+    namely all the coordinates of the display variables
+    such as zones, connections, drones, etc...
+
+    """
+
     def __init__(
         self,
         zones: dict[str, tuple[int, int, str]],
@@ -114,6 +178,35 @@ class State:
         turn_nb: int,
         turn_log: str
     ) -> None:
+
+        """
+
+        Initializes the attributes of a State object.
+
+        Parameters
+        ----------
+        zones: dict[str, tuple[int, int, str]]
+            All the zones stored in a dictionary
+            with the zone's name as the key
+            and (the zone's x, the zone's y, the zone's color) as the value
+            (x and y being the coordinates on the screen, not in a graph).
+        connections: dict[str, tuple[int, int, int, int]]
+            All the connections stored in a dictionary
+            with the connection's name as the key
+            and (the first zone's x, the first zone's y,
+            the second zone's x, the second zone'y) as the value
+            (which are also the coordinates on the screen).
+        drones: dict[int, tuple[int, int]]
+            All the drones stored in a dictionary
+            with the drone's id as the key
+            and (the drone's x, the drone's y) as the value
+            (which are also the coordinates on the screen).
+        turn_nb: int
+            The turn number to which this state corresponds.
+        turn_log: str
+            The drone movements's log for this turn.
+
+        """
 
         self.zones: dict[str, tuple[int, int, str]] = zones
         self.connections: dict[str, tuple[int, int, int, int]] = connections
@@ -124,9 +217,34 @@ class State:
 
 class ArcadeDisplay:
 
+    """
+
+    The main display class that draws
+    the simulation on the screen.
+
+    """
+
     class Measures:
 
+        """
+
+        A helper class to do calculations for the coordinates
+        of display variables and dimensions.
+
+        """
         def __init__(self, zones: list[Zone]) -> None:
+
+            """
+
+            Initializes a Measures instance by calculating
+            the base variables for the screen display.
+
+            Parameters
+            ----------
+            zones: list[Zone]
+                The zones of the drone map.
+
+            """
 
             min_x: int = min([z.x for z in zones])
             min_y: int = min([z.y for z in zones])
@@ -163,44 +281,77 @@ class ArcadeDisplay:
                 self.y_offset -= 1
 
         def calculate_drone_scale(
-            cls,
+            self,
             drone_texture: arcade.texture.texture.Texture,
             zones: list[Zone]
-        ) -> tuple[float, float]:
+        ) -> None:
+
+            """
+
+            Calculates the correct scale
+            for the drone image.
+
+            Parameters
+            ----------
+            drone_texture: arcade.texture.texture.Texture
+                The drone image loaded by the arcade library as a texture.
+            zones: list[Zone]
+                The zones of the drone map.
+
+            """
 
             max_drones_scale: int = max([z.max_drones for z in zones])
 
             scale: float = (
-                (cls.zone_sz - 4 - (5 * (max_drones_scale - 1)))
+                (self.zone_sz - 4 - (5 * (max_drones_scale - 1)))
                 // max_drones_scale
             ) / drone_texture.width
 
-            text_scaled_width: float = drone_texture.width * scale
-            text_scaled_height: float = (drone_texture.height + 15) * scale
+            self.t_width: float = drone_texture.width * scale
+            self.t_height: float = (drone_texture.height + 15) * scale
 
             while (
-                text_scaled_width < 10 and
-                text_scaled_height < 10 and
+                self.t_width < 10 and
+                self.t_height < 10 and
                 max_drones_scale > 1
             ):
 
                 max_drones_scale -= 1
                 scale = (
-                    (cls.zone_sz - 4 - (5 * (max_drones_scale - 1)))
+                    (self.zone_sz - 4 - (5 * (max_drones_scale - 1)))
                     // max_drones_scale
                 ) / drone_texture.width
-                text_scaled_width = drone_texture.width * scale
-                text_scaled_height = (drone_texture.height + 15) * scale
-
-            return text_scaled_width, text_scaled_height
+                self.t_width = drone_texture.width * scale
+                self.t_height = (drone_texture.height + 15) * scale
 
         def calculate_drone_pos_on_con(
-            cls,
+            self,
             coordinates: tuple[int, int, int, int],
-            drones_occupying: list[Drone],
-            width: float,
-            height: float
+            drones_occupying: list[Drone]
         ) -> dict[int, tuple[int, int]]:
+
+            """
+
+            Calculates the drones' positions
+            on a particular connection based
+            on the number of drones occupying it
+            and the space available on the connection.
+
+            Parameters
+            ----------
+            coordinates: tuple[int, int, int, int]
+                The coordinates of the connection line drawn on the screen
+                (for example: start_x, start_y, end_x, end_y).
+            drones_occupying: list[Drone]
+                The drones currently occupying the connection.
+
+            Returns
+            -------
+            dict[int, tuple[int, int]]
+                A dictionary containing the coordinates of each drone
+                on the connection line, stored by id.
+
+            """
 
             x1: int
             y1: int
@@ -222,19 +373,20 @@ class ArcadeDisplay:
                 y_end = y1
 
             if x1 != x2:
-                x_start += cls.zone_sz // 2
-                x_end -= cls.zone_sz // 2
+                x_start += self.zone_sz // 2
+                x_end -= self.zone_sz // 2
 
             if y1 != y2:
-                y_start += cls.zone_sz // 2
-                y_end -= cls.zone_sz // 2
+                y_start += self.zone_sz // 2
+                y_end -= self.zone_sz // 2
 
             drone_pos: list[tuple[int, int]] = []
 
             nb_drones_on_con: int = int(
-                (x_start - x_end) // width
-                if ((x_start - x_end) // width) < ((y_start - y_end) // height)
-                else (y_start - y_end) // height
+                (x_start - x_end) // self.t_width
+                if ((x_start - x_end) // self.t_width)
+                < ((y_start - y_end) // self.t_height)
+                else (y_start - y_end) // self.t_height
             )
 
             if nb_drones_on_con < 1:
@@ -268,41 +420,93 @@ class ArcadeDisplay:
             return drone_coor
 
         def calculate_drone_pos_on_zone(
-            cls,
+            self,
             zone_coor: tuple[int, int],
-            display_drones: list[Drone],
-            width: float,
-            height: float
+            display_drones: list[Drone]
         ) -> dict[int, tuple[int, int]]:
 
+            """
+
+            Calculates the drones' positions
+            inside a certain zone based
+            on the number of drones occupying it
+            and the space available in the zone.
+
+            Parameters
+            ----------
+            zone_coor: tuple[int, int]
+                The coordinates of the zone on the screen
+                (x and y as the point in the center of the zone).
+            display_drones: list[Drone]
+                The drones currently occupying the zone.
+
+            Returns
+            -------
+            dict[int, tuple[int, int]]
+                A dictionary containing the coordinates of each drone
+                inside the zone, stored by id.
+
+            """
             zone_x: int
             zone_y: int
             zone_x, zone_y = zone_coor
 
-            drone_x: float = zone_x - cls.zone_sz // 2 + 2 + width // 2
-            drone_y: float = zone_y + cls.zone_sz // 2 - 2 - height // 2
+            drone_x: float = (
+                zone_x - self.zone_sz // 2
+                + 2 + self.t_width // 2
+            )
+            drone_y: float = (
+                zone_y + self.zone_sz // 2
+                - 2 - self.t_height // 2
+            )
 
             drone_coor: dict[int, tuple[int, int]] = {}
 
             for drone in display_drones:
 
-                if drone_x + width // 2 > zone_x + cls.zone_sz // 2 - 2:
+                if (
+                    drone_x + self.t_width // 2
+                    > zone_x + self.zone_sz // 2 - 2
+                ):
 
-                    drone_x = zone_x - cls.zone_sz // 2 + 2 + width // 2
-                    drone_y -= height - 5
+                    drone_x = (
+                        zone_x - self.zone_sz // 2
+                        + 2 + self.t_width // 2
+                    )
+                    drone_y -= self.t_height - 5
 
-                if drone_y - height // 2 < zone_y - cls.zone_sz // 2 + 2:
+                if (
+                    drone_y - self.t_height // 2
+                    < zone_y - self.zone_sz // 2 + 2
+                ):
 
-                    drone_y = zone_y + cls.zone_sz // 2 - 2 - height // 2
-                    drone_x = zone_x - cls.zone_sz // 2 + 2 + width // 2
+                    drone_y = (
+                        zone_y + self.zone_sz // 2
+                        - 2 - self.t_height // 2
+                    )
+                    drone_x = (
+                        zone_x - self.zone_sz // 2
+                        + 2 + self.t_width // 2
+                    )
 
                 drone_coor[drone.id] = (int(drone_x), int(drone_y))
 
-                drone_x += width + 5
+                drone_x += self.t_width + 5
 
             return drone_coor
 
     def __init__(self, zones: list[Zone]) -> None:
+
+        """
+
+        Initializes the attributes of a ArcadeDisplay object.
+
+        Parameters
+        ----------
+        zones: list[Zone]
+            The zones of the drone map.
+
+        """
 
         self.msr = self.Measures(zones)
         self.states: list[State] = []
@@ -310,15 +514,16 @@ class ArcadeDisplay:
         self.drone_texture: arcade.texture.texture.Texture = (
             arcade.load_texture(DRONE_IMAGE)
         )
-
-        self.text_scaled_width: float
-        self.text_scaled_height: float
-
-        self.text_scaled_width, self.text_scaled_height = (
-            self.msr.calculate_drone_scale(self.drone_texture, zones)
-        )
+        self.msr.calculate_drone_scale(self.drone_texture, zones)
 
     def start_visu(self) -> None:
+
+        """
+
+        Starts the graphic visualisation of the simulation
+        by creating an arcade Window and setting up an arcade View.
+
+        """
 
         window: arcade.application.Window = (
             arcade.Window(WIDTH, HEIGHT, "LET'S FLY IN", resizable=True)
@@ -328,6 +533,13 @@ class ArcadeDisplay:
         arcade.run()
 
     def draw_state(self) -> None:
+
+        """
+
+        Draws all the elements needed of a certain step of the simulation
+        on the arcade window opened.
+
+        """
 
         current_state: State = self.states[self.cur_state_id]
 
@@ -485,16 +697,16 @@ class ArcadeDisplay:
                 arcade.XYWH(
                     drone_x,
                     drone_y,
-                    self.text_scaled_width,
-                    self.text_scaled_height
+                    self.msr.t_width,
+                    self.msr.t_height
                 )
             )
             arcade.draw_text(
                 str(drone_id),
                 drone_x,
-                drone_y - self.text_scaled_height // 2,
+                drone_y - self.msr.t_height // 2,
                 ColorPalette.get_color("black"),
-                (5 + (self.text_scaled_height / 8)),
+                (5 + (self.msr.t_height / 8)),
                 anchor_x="center",
                 font_name=CUSTOM_FONT
             )
@@ -507,6 +719,27 @@ class ArcadeDisplay:
         turn_log: str
     ) -> None:
 
+        """
+
+        Adds a new State object to store the information
+        relevant to a new step in the simulation
+        to be able to call it later without having to refactor anything.
+
+        Parameters
+        ----------
+        zones: list[Zone]
+            The zones of the drone map.
+        connections: list[Connection]
+            The connections between the zones.
+        drones_delivered: list[Drone]
+            The drones that already reached the goal zone
+            (as they are no longer tracked actively,
+            this variable helps to display them nonetheless).
+        turn_log: str
+            The drone movement's log
+            pertaining to the current step in the simulation.
+
+        """
         zones_coor: dict[str, tuple[int, int, str]] = {}
         con_coor: dict[str, tuple[int, int, int, int]] = {}
         drone_coor: dict[int, tuple[int, int]] = {}
@@ -547,8 +780,6 @@ class ArcadeDisplay:
             drone_coor.update(self.msr.calculate_drone_pos_on_con(
                 con_coor[con.name],
                 drones_occupying,
-                self.text_scaled_width,
-                self.text_scaled_height
             ))
 
         for zone in zones:
@@ -561,8 +792,6 @@ class ArcadeDisplay:
             drone_coor.update(self.msr.calculate_drone_pos_on_zone(
                 (zones_coor[zone.name][0], zones_coor[zone.name][1]),
                 display_drones,
-                self.text_scaled_width,
-                self.text_scaled_height
             ))
 
         self.states.append(State(
