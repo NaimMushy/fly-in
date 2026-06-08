@@ -311,8 +311,8 @@ class ArcadeDisplay:
             self.t_height: float = (drone_texture.height + 15) * scale
 
             while (
-                self.t_width < 10 and
-                self.t_height < 10 and
+                self.t_width < 20 and
+                self.t_height < 20 and
                 max_drones_scale > 1
             ):
 
@@ -585,7 +585,7 @@ class ArcadeDisplay:
             WIDTH // 6,
             text_y,
             ColorPalette.get_color("african_violet"),
-            20.0,
+            28.0,
             anchor_x="center",
             font_name=CUSTOM_FONT
         )
@@ -607,7 +607,7 @@ class ArcadeDisplay:
                 WIDTH // 12,
                 text_y,
                 ColorPalette.get_color("african_violet"),
-                16.0,
+                24.0,
                 font_name=CUSTOM_FONT
             )
             text_y -= commands_height // NB_COMMANDS
@@ -621,7 +621,7 @@ class ArcadeDisplay:
             WIDTH - WIDTH // 3,
             text_y,
             ColorPalette.get_color("african_violet"),
-            20.0,
+            28.0,
             anchor_x="center",
             font_name=CUSTOM_FONT
         )
@@ -634,7 +634,7 @@ class ArcadeDisplay:
                 WIDTH - WIDTH // 3,
                 text_y,
                 ColorPalette.get_color("african_violet"),
-                16.0,
+                24.0,
                 anchor_x="center",
                 font_name=CUSTOM_FONT
             )
@@ -682,9 +682,9 @@ class ArcadeDisplay:
             arcade.draw_text(
                 zone_name,
                 zone_x,
-                zone_y - self.msr.zone_sz // 2 - 15,
+                zone_y - self.msr.zone_sz // 2 - 25,
                 ColorPalette.get_color(zone_color),
-                14.0,
+                (10.0 + self.msr.zone_sz / 15),
                 self.msr.zone_sz,
                 anchor_x="center",
                 font_name=CUSTOM_FONT

@@ -45,7 +45,7 @@ def main() -> None:
     if len(sys.argv) == 2:
         map_file = sys.argv[1]
 
-    arcade_mode: bool = False
+    arcade_mode: bool = True
     user_input: str = ""
     ret: int = 0
 
