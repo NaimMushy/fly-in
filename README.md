@@ -109,7 +109,7 @@
 
   **AI Usage:**
   
-  I asked ChatGPT for some help regarding some issues with the terminal display as well as for debugging.<br>
+  I asked ChatGPT for some help mainly for debugging, especially for the terminal display that I ended up not using.<br>
 
 
   ### Algorithm
