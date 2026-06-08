@@ -26,7 +26,7 @@
   Movement between zones has a specific cost depending on the zones' type, and the capacity of the zones varies.<br>
   During a turn, a drone can either move to another zone, pass through a connection or wait.<br>
   The simulation stops when all the drones have reached the end zone, all the while trying to achieve a minimal number of turns.<br><br>
-  A visualization of the simulation step by step is provided with a terminal display, offering user interaction through small menus and commands.<br>
+  A visualization of the simulation is provided via the Arcade Python library, offering user interaction through commands, as well as a terminal menu.<br>
   
 
 
@@ -71,11 +71,7 @@
   **3. Output Example:**
 
   ```
-  [map display]
-
-  ==== DRONE MOVEMENTS ====
-
-   -> D1-waypoint2 D2-waypoint1
+  D1-waypoint2 D2-waypoint1
   ```
 
   **4. Simulation Options:**
@@ -85,21 +81,12 @@
     When the program is run, a start menu is presented, with multiple options:<br>
       - select new map -> change the drone map used for the simulation<br>
       - launch the drones -> start the simulation using the map selected<br>
-      - toggle info mode -> turn on and off the information mode, which provides additional information throughout the simulation<br>
+      - toggle graphic mode -> turn on and off the graphic mode, which provides a visual representation via the arcade library (on by default)<br>
       - display map paths -> show a list of all available paths for the drone maps included in the subject (for tests)<br>
       - quit the program -> exit<br><br>
     
     If the map given to parse is invalid or cannot be opened, the appropriate error message is displayed and the user has to change maps to be able to run the simulation.<br>
     Otherwise, the simulation should run without an issue.<br><br>
-
-  + Step by step Menu:<br>
-
-    When the simulation starts, the beginnning state of the drone map is displayed, followed by an option menu:<br>
-      - next step -> move forward to the next step in the simulation<br>
-      - previous step -> go back to the previous step in the simulation<br>
-      - return to the main menu -> stop the simulation and go back to the start menu<br><br>
-  
-    If the current state of the simulation is the last one, meaning all the drones have been delivered, going to the next step of the simulation will end the simulation and return to the start menu.<br>
 
 
 ### Resources
@@ -109,9 +96,9 @@
 
   **Links:**
 
-  Terminal display:<br><br>
-    - [Rich colors documentation](https://rich.readthedocs.io/en/stable/appendix/colors.html)<br>
-    - [Rich text documentation](https://rich.readthedocs.io/en/stable/text.html)<br>
+   Arcade display:<br><br>
+    - [Arcade documentation for basic methods](https://api.arcade.academy/en/stable/example_code/index.html)<br>
+    - [Arcade documentation for function definition and parameters](https://api.arcade.academy/en/2.6.1/arcade.html)<br>
     - [Blinking dots animation](https://stackoverflow.com/questions/58212749/triple-dots-animation-while-program-is-loading-in-terminal)<br><br>
 
   Algorithm:<br><br>
@@ -122,7 +109,7 @@
 
   **AI Usage:**
   
-  I asked ChatGPT for some help regarding some issues with the terminal display as well as for debugging.<br>
+  I asked ChatGPT for some help mainly for debugging, especially for the terminal display that I ended up not using.<br>
 
 
   ### Algorithm
@@ -151,11 +138,6 @@
   I reevaluate which paths are available starting from the drone's current position and then determine the best one to follow.<br>
   In most cases, the first path that a drone follows does not change throughout the simulation, but I preferred to be rigorous and eliminate potential losses of efficiency.<br><br>
 
-  **Display Connections:**
-
-  I also used an A* pathfinding algorithm for the display of the connections between zones.<br>
-  At first, I struggled to form lines that seemed okay, then I decided to calculate a path of coordinates using a simple and efficient algorithm I was familiar with.<br>
-  The result is pretty acceptable, becoming a bit jumbled when there are too many connections as they can overlap each other, but I didn't find a better way to do it in the terminal interface.<br><br>
 
 
 ### Visual Representation
@@ -165,10 +147,12 @@
 
   **Terminal Display:**
 
-  I decided to try to achieve a correct visual representation using the terminal interface.<br>
-  It proved to be quite a challenge, as I could not simply write a character at a certain position in the terminal.<br>
-  What I did was construct each vertical line of the terminal with the appropriate characters, store them in a grid and then print them one by one.<br>
-  I used the rich library for python to add more color options (if you wish to see all the colors available, go see the Resources section).<br><br>
-  To avoid having to calculate again if the same map is launched more than once, I defined State objects that contain all the information relevant to a certain simulation and each of its steps.<br>
-  That way, I can simply display the required states for the simulation if they have already been created.<br><br>
-  What's more, with the information mode enabled, the type of the zone is displayed on the top border, and additional information regarding the drones and zones is printed at the end of a turn.<br><br>
+At first I wanted to try and make a visual representation in the terminal. I made something that worked pretty well and I was happy with the way it looked.<br>
+Unfortunately this kind of display is too easily broken by a miscalculation or an unexpected edge case (as I discovered in my first retry of the project).<br>
+That's why I switched to the Arcade library and made a simple and uncomplicated display that wouldn't crash because of a small bug. Although I kept the terminal menu I used in the old version for user interaction and choice.<br>
+The Arcade library for Python is relatively easy to understand and use, and I have to admit I didn't go very far to see if I could do a more elaborate display as this project has been going on for a while now and I would like to pass it.<br>
+I used very basic methods such as draw_line, draw_text and draw_rect, and I added some user commands to make it more interesting.<br>
+The simulation runs by default on auto, and the user can imcrease or decrease the speed, go step by step, pause and exit.<br>
+On the right side I also display the drone movements during the current turn.<br>
+To make it a little prettier I added a drone image instead of a simple dot, and I changed the font for a pixel-style font (free license).<br>
+The graphic mode can be disabled or enabled in the main menu, so that the user can choose to have only the terminal logs.<br><br>
