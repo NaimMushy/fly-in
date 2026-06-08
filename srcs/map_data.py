@@ -1,6 +1,5 @@
 import re
 import time
-from rich.color import Color, ColorParseError
 from typing import Callable
 from pydantic import ValidationError
 from .zones import Zone, Connection
@@ -625,27 +624,11 @@ class MapParser:
                 if not match.group(2).isalnum():
 
                     raise ValueError(
-                        f"Color {match.group(1)} is an invalid color"
+                        f"Color '{match.group(2)}' is an invalid color"
                         "(should be in one word)"
                     )
 
-                try:
-                    color_parsed: Color = Color.parse(match.group(2))
-
-                except ColorParseError:
-
-                    try:
-                        color_parsed = Color.parse(match.group(2) + "1")
-
-                    except ColorParseError:
-
-                        if match.group(2) == "rainbow":
-                            color = match.group(2)
-
-                        color_defined = True
-                        continue
-
-                color = color_parsed.name
+                color = match.group(2)
                 color_defined = True
 
             elif match.group(1) == "max_drones":
