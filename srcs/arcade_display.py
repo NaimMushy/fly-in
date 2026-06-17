@@ -302,11 +302,6 @@ class ArcadeDisplay:
 
             max_drones_scale: int = max([z.max_drones for z in zones])
 
-            if max_drones_scale // 2 > 1:
-                max_drones_scale //= 2
-            elif max_drones_scale < 1:
-                max_drones_scale = 1
-
             scale: float = (
                 (self.zone_sz - 4 - (5 * (max_drones_scale - 1)))
                 // max_drones_scale
@@ -387,12 +382,15 @@ class ArcadeDisplay:
 
             drone_pos: list[tuple[int, int]] = []
 
+            print(f"x start : {x_start} x end : {x_end} y start : {y_start} y_end : {y_end}")
             nb_drones_on_con: int = int(
-                (x_start - x_end) // self.t_width
-                if ((x_start - x_end) // self.t_width)
-                < ((y_start - y_end) // self.t_height)
-                else (y_start - y_end) // self.t_height
+                (x_end - x_start) // self.t_width
+                if ((x_end - x_start) // self.t_width)
+                > ((y_end - y_start) // self.t_height)
+                else (y_end - y_start) // self.t_height
             )
+            print(f"width division : {(x_start - x_end) // self.t_width} height division : {((y_start - y_end) // self.t_height)}")
+            print(f"nb drones on con : {nb_drones_on_con} t width : {self.t_width} t height : {self.t_height}")
 
             if nb_drones_on_con < 1:
                 nb_drones_on_con = 1
@@ -411,6 +409,7 @@ class ArcadeDisplay:
                 drone_starty += ((y_end - y_start) // nb_drones_on_con)
 
             cur_pos = len(drone_pos) - len(drone_pos) // len(drones_occupying)
+            print(f"len drone pos: {len(drone_pos)} len drones occupying : {len(drones_occupying)} cur pos : {cur_pos}")
 
             drone_coor: dict[int, tuple[int, int]] = {}
 
