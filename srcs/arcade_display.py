@@ -363,14 +363,18 @@ class ArcadeDisplay:
             y_start: int = y1
             x_end: int = x2
             y_end: int = y2
+            x_sign: int = 1
+            y_sign: int = 1
 
             if x1 > x2:
                 x_start = x2
                 x_end = x1
+                x_sign = -1
 
             if y1 > y2:
                 y_start = y2
                 y_end = y1
+                y_sign = -1
 
             if x1 != x2:
                 x_start += self.zone_sz // 2
@@ -389,7 +393,7 @@ class ArcadeDisplay:
                 > ((y_end - y_start) // self.t_height)
                 else (y_end - y_start) // self.t_height
             )
-            print(f"width division : {(x_start - x_end) // self.t_width} height division : {((y_start - y_end) // self.t_height)}")
+            print(f"width division : {(x_end - x_start) // self.t_width} height division : {((y_end - y_start) // self.t_height)}")
             print(f"nb drones on con : {nb_drones_on_con} t width : {self.t_width} t height : {self.t_height}")
 
             if nb_drones_on_con < 1:
@@ -405,8 +409,8 @@ class ArcadeDisplay:
             for _ in range(nb_drones_on_con):
 
                 drone_pos.append((drone_startx, drone_starty))
-                drone_startx += ((x_end - x_start) // nb_drones_on_con)
-                drone_starty += ((y_end - y_start) // nb_drones_on_con)
+                drone_startx += ((x_end - x_start) // self.t_width) * x_sign
+                drone_starty += ((y_end - y_start) // self.t_height) * y_sign
 
             cur_pos = len(drone_pos) - len(drone_pos) // len(drones_occupying)
             print(f"len drone pos: {len(drone_pos)} len drones occupying : {len(drones_occupying)} cur pos : {cur_pos}")
