@@ -41,7 +41,7 @@ class App:
 
     """
 
-    A class representing an organizer that handles every step
+    A class representing an application that handles every step
     of the drone simulation, including the terminal menu
     and user actions.
 
@@ -51,7 +51,7 @@ class App:
 
         """
 
-        Initializes the attributes of an Organizer object.
+        Initializes the attributes of an App object.
 
         Parameters
         ----------
