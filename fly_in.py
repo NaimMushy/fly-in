@@ -37,7 +37,7 @@ MAPS: dict[str, dict[int, str]] = {
 }
 
 
-class Organizer:
+class App:
 
     """
 
@@ -256,12 +256,12 @@ def main() -> None:
         )
 
     if len(sys.argv) == 2:
-        orga: Organizer = Organizer(sys.argv[1])
+        app: App = App(sys.argv[1])
 
     else:
-        orga = Organizer()
+        app = App()
 
-    orga.main_loop()
+    app.main_loop()
 
 
 if __name__ == "__main__":
