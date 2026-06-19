@@ -1,7 +1,7 @@
 #-------------------------------- VARIABLES ----------------------------------#
 
 NAME		=	fly_in.py
-ARGS		?=
+MAP			?=
 POETRY		=	poetry
 
 #-------------------------------- RULES --------------------------------------#
@@ -15,7 +15,7 @@ install: poetry-check
 	poetry install
 
 run: poetry-check
-	@poetry run python3 $(NAME) $(ARGS)
+	@poetry run python3 $(NAME) $(MAP)
 
 debug: poetry-check
 	@poetry run python3 -m pdb $(NAME)

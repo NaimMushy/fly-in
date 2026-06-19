@@ -125,6 +125,7 @@ class App:
                     ) and map_file_index != "q":
 
                         print("\nInvalid choice!")
+                        time.sleep(0.4)
                         os.system('clear')
                         TuiDisplay.display_maps(MAPS, MAP_DIR)
                         map_file_index = input("Choose a map: ")
