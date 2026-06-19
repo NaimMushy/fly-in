@@ -56,7 +56,7 @@ class App:
         Parameters
         ----------
         initial_map: str
-            The map file path with which the organizer starts with.
+            The map file path with which the application starts with.
 
         """
 
