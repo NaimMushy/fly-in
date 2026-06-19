@@ -189,16 +189,6 @@ class App:
         and shows it either through terminal output
         or a visual representation using the arcade library.
 
-        Parameters
-        ----------
-        map_parser : MapParser
-            The parser used to verify and validate map data.
-        map_file : str
-            The name of the file containing all of the map data.
-        arcade_mode : int
-            Indicates whether or not
-            the graphic representation mode is activated.
-
         """
 
         os.system('clear')
