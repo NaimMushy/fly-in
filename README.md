@@ -46,8 +46,8 @@
   ``make lint`` -> checks for mypy and flake8 errors<br>
   ``make lint-strict`` -> checks for mypy --strict and flake8 errors<br>
   ``make debug`` -> runs the program with a debugger<br><br>
-  If you wish to specifiy a map file from the start, define the ARGS as so:<br>
-  ``make run ARGS="<file_path>"``<br><br>
+  If you wish to specifiy a map file from the start, define the MAP variable as so:<br>
+  ``make run MAP="<file_path>"``<br><br>
   + Direct execution:<br><br>
   You can also simply run the program with the following:<br>
   ``poetry run python3 fly_in.py <file_path>``<br>
