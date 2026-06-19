@@ -1,4 +1,3 @@
-import time
 import pyfiglet
 
 
@@ -60,11 +59,11 @@ class TuiDisplay:
             "     ➤ g: TOGGLE GRAPHIC MODE "
             f"({'off' if not arcade_mode else 'on'})"
         )
-        print("     ➤ m: DISPLAY AVAILABLE MAP PATHS")
+        print("     ➤ m: CHOOSE AMONG AVAILABLE MAPS")
         print("     ➤ q: QUIT PROGRAM")
 
     @staticmethod
-    def display_maps(maps: dict[str, list[str]], map_dir: str) -> None:
+    def display_maps(maps: dict[str, dict[int, str]], map_dir: str) -> None:
 
         """
 
@@ -80,18 +79,18 @@ class TuiDisplay:
         """
         print("\n✦ MAPS AVAILABLE ✦\n")
 
-        for map_type, map_path in maps.items():
+        for category, corr_maps in maps.items():
 
-            print(f" ➤ {map_type.upper()}:\n")
+            print(f" ➤ {category.upper()}:\n")
 
-            for m in map_path:
+            for m_index, m in corr_maps.items():
 
-                print(f" - {map_dir + '/' + map_type + '/' + m + '.txt'}")
+                print(
+                    f" ({m_index}) - "
+                    f"{map_dir + '/' + category + '/' + m + '.txt'}"
+                )
 
             print()
-
-        time.sleep(1)
-        input("Press any key to continue...\n")
 
     @staticmethod
     def display_end(turns: int, avg: int) -> None:

@@ -302,8 +302,11 @@ class ArcadeDisplay:
 
             max_drones_scale: int = max([z.max_drones for z in zones])
 
+            if max_drones_scale > 2:
+                max_drones_scale //= 2
+
             scale: float = (
-                (self.zone_sz - 4 - (5 * (max_drones_scale - 1)))
+                (self.zone_sz - 4 - (5 * max_drones_scale))
                 // max_drones_scale
             ) / drone_texture.width
 
@@ -311,14 +314,14 @@ class ArcadeDisplay:
             self.t_height: float = (drone_texture.height + 15) * scale
 
             while (
-                self.t_width < 20 and
-                self.t_height < 20 and
+                self.t_width < 50 and
+                self.t_height < 50 and
                 max_drones_scale > 1
             ):
 
                 max_drones_scale -= 1
                 scale = (
-                    (self.zone_sz - 4 - (5 * (max_drones_scale - 1)))
+                    (self.zone_sz - 4 - (5 * max_drones_scale))
                     // max_drones_scale
                 ) / drone_texture.width
                 self.t_width = drone_texture.width * scale
@@ -405,12 +408,11 @@ class ArcadeDisplay:
                     abs(y_end - y_start) // nb_drones_on_con
                 ) * y_sign
 
-            if len(drone_pos) <= len(drones_occupying):
+            diff: int = len(drone_pos) - len(drones_occupying)
+            if diff <= 0:
                 cur_pos: int = len(drone_pos)
             else:
-                cur_pos = len(drone_pos) - (
-                    (len(drone_pos) - len(drones_occupying)) // 2
-                )
+                cur_pos = len(drone_pos) - diff // 2
 
             drone_coor: dict[int, tuple[int, int]] = {}
 
@@ -590,7 +592,7 @@ class ArcadeDisplay:
             WIDTH // 6,
             text_y,
             ColorPalette.get_color("african_violet"),
-            20.0,
+            28.0,
             anchor_x="center",
             font_name=CUSTOM_FONT
         )
@@ -612,7 +614,7 @@ class ArcadeDisplay:
                 WIDTH // 12,
                 text_y,
                 ColorPalette.get_color("african_violet"),
-                16.0,
+                24.0,
                 font_name=CUSTOM_FONT
             )
             text_y -= commands_height // NB_COMMANDS
@@ -626,7 +628,7 @@ class ArcadeDisplay:
             WIDTH - WIDTH // 3,
             text_y,
             ColorPalette.get_color("african_violet"),
-            20.0,
+            28.0,
             anchor_x="center",
             font_name=CUSTOM_FONT
         )
@@ -639,7 +641,7 @@ class ArcadeDisplay:
                 WIDTH - WIDTH // 3,
                 text_y,
                 ColorPalette.get_color("african_violet"),
-                16.0,
+                24.0,
                 anchor_x="center",
                 font_name=CUSTOM_FONT
             )

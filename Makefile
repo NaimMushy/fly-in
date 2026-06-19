@@ -30,10 +30,12 @@ fclean: clean
 re: fclean all
 
 lint: poetry-check
+	@$(MAKE) install >/dev/null
 	poetry run flake8 .
 	poetry run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs --exclude .venv
 
 lint-strict: poetry-check
+	@$(MAKE) install >/dev/null
 	poetry run flake8 .
 	poetry run mypy . --strict
 
