@@ -130,6 +130,8 @@
   For each iteration (from 1 to K), I examine each path and generate new potential paths by deviating from the current path at each node except the destination.<br>
   The deviation is done by establishing a root path (the current path until the current node) and computing the shortest path from that node to the destination while temporarily removing zones that would cause a loop or duplicate a previously found path.<br><br>
   Using the two in tandem allows me to find at most the 5 (default) best alternatives for each drone, so that they can follow the proper path, but without having to calculate **every** path that exists (that makes the program too slow).<br><br>
+  Dijkstra's complexity is equal to O((N + E) log N) where N=number of nodes and E=number of edges.<br>
+  Yen's K complexity is equal to O(k N (N + E log N)) where k=number of iterations (i.e maximum number of paths to find).<br><br>
   
 
   **Drone Routing:**
